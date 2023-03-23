@@ -118,7 +118,8 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
    elTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("elTriggersToUse");
    muTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("muTriggersToUse");
    //now do what ever initialization is needed
-   tree_ = new TTree("data","Tree with vectors");
+   //tree_ = new TTree("data","Tree with vectors");
+   tree_ = fs->make<TTree>("JetData","JetData");
 
 }
 
