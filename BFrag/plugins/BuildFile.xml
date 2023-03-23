@@ -8,6 +8,5 @@
 <use name="DataFormats/PatCandidates"/>
 <use name="DataFormats/Common"/>
 <use name="PhysicsTools/UtilAlgos"/>
-<use name="BFrag/BFrag"/>
 <use name="root"/>
 <flags EDM_PLUGIN="1"/>
