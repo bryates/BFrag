@@ -1,0 +1,7 @@
+<use name="root"/>
+<use name="TrackingTools/Records"/>
+<use name="TrackingTools/TransientTrack"/>
+<Flags CXXFLAGS="-ggdb"/>
+<export>
+  <lib name="1"/>
+</export>
