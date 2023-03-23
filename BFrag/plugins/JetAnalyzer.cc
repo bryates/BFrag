@@ -205,7 +205,6 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       for(size_t imu=0; imu<muTriggersToUse_.size(); imu++)
 	{
 	  if (triggerList[i].find(muTriggersToUse_[imu])==std::string::npos) continue;
-      std::cout << triggerList[i] << std::endl;
 	  mutrig |= (1 << imu);
 	}
       for(size_t iel=0; iel<elTriggersToUse_.size(); iel++) 
