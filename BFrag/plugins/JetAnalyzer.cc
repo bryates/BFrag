@@ -218,8 +218,6 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   tree_->Branch("l_pid",&l_pid);
   std::vector<float> l_chargedHadronIso;
   tree_->Branch("l_chargedHadronIso",&l_chargedHadronIso);
-  std::vector<float> l_miniIso;
-  tree_->Branch("l_miniIso",&l_miniIso);
   std::vector<float> l_relIso;
   tree_->Branch("l_relIso",&l_relIso);
   std::vector<float> l_ip3d;
@@ -285,11 +283,10 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(!passPt || !passEta) continue;
 
       //ID
-      //bool isMedium(muon::isMediumMuon(mu));
       bool isMedium(mu.passed(reco::Muon::CutBasedIdMedium));
-      bool isTight(mu.passed(reco::Muon::CutBasedIdTight));//muon::isTightMuon(mu,primVtx));
-      bool isLoose(mu.passed(reco::Muon::CutBasedIdLoose));//muon::isLooseMuon(mu));
-      bool isSoft(mu.passed(reco::Muon::SoftCutBasedId));//muon::isSoftMuon(mu,primVtx));
+      bool isTight(mu.passed(reco::Muon::CutBasedIdTight));
+      bool isLoose(mu.passed(reco::Muon::CutBasedIdLoose));
+      bool isSoft(mu.passed(reco::Muon::SoftCutBasedId));
       if(!isMedium) continue;
 
       //save it
@@ -297,23 +294,13 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       isPromptFinalState.push_back(gen ? gen->isPromptFinalState() : false);
       isDirectPromptTauDecayProductFinalState.push_back(gen ? gen->isDirectPromptTauDecayProductFinalState() : false);
       l_id.push_back(mu.pdgId());
-      /*FIXME
-      int genidx(-1);
-      for(int ig=0; ig<ev_.ng; ig++)
-	{
-	  if(abs(ev_.g_id[ig])!=ev_.l_id[ev_.nl]) continue;
-	  if(deltaR( mu.eta(),mu.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
-	  genidx = ig
-	  break;
-	}	 
-      l_g.push_back(genudx);
-      */
       l_charge.push_back(mu.charge());
       l_pt.push_back(mu.pt());
       l_eta.push_back(mu.eta());
       l_phi.push_back(mu.phi());
       l_mass.push_back(mu.mass());
       if(gen != nullptr) {
+        //save the gen-matched muon
         l_g_pt.push_back(gen->pt());
         l_g_eta.push_back(gen->eta());
         l_g_phi.push_back(gen->phi());
@@ -322,21 +309,11 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
       l_pid.push_back((isTight | (isMedium<<1) | (isLoose<<2) | (isSoft<<3)));
       l_chargedHadronIso.push_back(mu.pfIsolationR04().sumChargedHadronPt);
-      //l_miniIso.push_back(getMiniIsolation(pfcands,&mu,0.05,0.2, 10., false));
-      //FIXME l_relIso.push_back((mu.pfIsolationR04().sumChargedHadronPt + max(0., mu.pfIsolationR04().sumNeutralHadronEt + mu.pfIsolationR04().sumPhotonEt - 0.5*mu.pfIsolationR04().sumPUPt))/mu.pt());
-      l_relIso.push_back(mu.passed(reco::Muon::PFIsoTight) | 
+      l_relIso.push_back(mu.passed(reco::Muon::PFIsoTight) |      // tight is l_relIso[imu]&0b1
                          mu.passed(reco::Muon::PFIsoMedium)<<1 | 
                          mu.passed(reco::Muon::PFIsoLoose)<<2);
       float t_l_ip3d(-9999.);
       float t_l_ip3dsig(-9999);
-      /* FIXME
-      if(mu.innerTrack().get())
-	{
-	  std::pair<bool,Measurement1D> ip3dRes = getImpactParameter<reco::TrackRef>(mu.innerTrack(), primVtxRef, iSetup, true);
-	  t_l_ip3d = ip3dRes.second.value();
-	  t_l_ip3dsig = ip3dRes.second.significance();
-	}   
-      */
       if(mu.outerTrack().isNonnull()) {
         l_dxy.push_back(mu.dB());
         l_dxyE.push_back(mu.edB());
@@ -416,14 +393,13 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       l_phi.push_back(el.phi());
       l_mass.push_back(el.mass());
       if(gen != nullptr) {
+        //save the gen-matched electron
         l_g_pt.push_back(gen->pt());
         l_g_eta.push_back(gen->eta());
         l_g_phi.push_back(gen->phi());
         l_g_mass.push_back(gen->mass());
         l_g_id.push_back(gen->pdgId());
       }
-      //l_miniIso.push_back(getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false));
-      //l_relIso.push_back(fullCutFlowData.getValueCutUpon(9));
       double neutral = el.pfIsolationVariables().sumNeutralHadronEt + el.pfIsolationVariables().sumPhotonEt  - 0.5*el.pfIsolationVariables().sumPUPt;
       if(neutral < 0) neutral = 0;
       l_relIso.push_back((el.pfIsolationVariables().sumChargedHadronPt+ neutral)/el.pt());     
@@ -442,8 +418,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  }
 	  l_ip3d.push_back(t_l_ip3d);
 	  l_ip3dsig.push_back(t_l_ip3dsig);
-      nleptons += (el.pt()>25 && fabs(el.eta())<2.5);
-      //nleptons += (passTightIdExceptIso && el.pt()>25 && fabs(el.eta())<2.5);
+      nleptons += (passTightId && el.pt()>25 && fabs(el.eta())<2.5);
     }
 
   if(nleptons == 0) return;
