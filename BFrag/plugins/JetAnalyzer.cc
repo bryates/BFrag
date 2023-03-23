@@ -39,6 +39,8 @@
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Framework/interface/TriggerNamesService.h"
 
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
@@ -85,6 +87,7 @@ class JetAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<edm::View<pat::Jet> > jetToken_;
       edm::EDGetTokenT<std::vector<reco::GenJet>  > genJetsToken_;
 
+      edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
       std::vector<std::string> muTriggersToUse_, elTriggersToUse_;
 
       TTree *tree_;
@@ -112,7 +115,8 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
   eleMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleMediumIdMap"))),
   eleTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleTightIdMap"))),
   jetToken_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jets"))),  
-  genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets")))
+  genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
+  triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits")))
 {
    electronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
    elTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("elTriggersToUse");
@@ -172,6 +176,7 @@ void saveJetConstituentPt(const pat::Jet* jet, std::vector<double>& recoJetConst
 void
 JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+  const bool isData  = iEvent.isRealData();
   //VERTICES
   edm::Handle<reco::VertexCollection> vertices;
   iEvent.getByToken(vtxToken_, vertices);
@@ -182,6 +187,38 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   tree_->Branch("n_vtx",&n_vtx);
   n_vtx.push_back(vertices->size());
   if(n_vtx.size()==0) return;
+
+  //TRIGGER INFORMATION
+  edm::Handle<edm::TriggerResults> h_trigRes;
+  iEvent.getByToken(triggerBits_, h_trigRes);
+  std::vector<std::string> triggerList;
+  edm::Service<edm::service::TriggerNamesService> tns;
+  tns->getTrigPaths(*h_trigRes,triggerList);
+  std::vector<int> muTrigger;
+  std::vector<int> elTrigger;
+  tree_->Branch("muTrigger",&muTrigger);
+  tree_->Branch("elTrigger",&elTrigger);
+  int mutrig = 0;
+  int eltrig = 0;
+  for (unsigned int i=0; i< h_trigRes->size(); i++) {
+      if( !(*h_trigRes)[i].accept() ) continue;
+      for(size_t imu=0; imu<muTriggersToUse_.size(); imu++)
+	{
+	  if (triggerList[i].find(muTriggersToUse_[imu])==std::string::npos) continue;
+      std::cout << triggerList[i] << std::endl;
+	  mutrig |= (1 << imu);
+	}
+      for(size_t iel=0; iel<elTriggersToUse_.size(); iel++) 
+	{
+	  if (triggerList[i].find(elTriggersToUse_[iel])==std::string::npos)continue;
+	  eltrig |= (1 << iel);
+	}
+  }
+  muTrigger.push_back(mutrig);
+  elTrigger.push_back(eltrig);
+  bool passMuTrigger(isData ? mutrig!=0 : true);
+  bool passElTrigger(isData ? eltrig!=0 : true);  
+  if(!passMuTrigger && !passElTrigger) return;
 
   int nleptons(0);
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
