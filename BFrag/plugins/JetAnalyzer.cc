@@ -437,6 +437,8 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   std::vector<float> j_phi;
   std::vector<float> j_g;
   std::vector<float> j_deepB;
+  std::vector<float> j_partflav;
+  std::vector<float> j_hadflav;
   std::vector<float> pf_pt;
   std::vector<float> pf_eta;
   std::vector<float> pf_phi;
@@ -460,6 +462,8 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   tree_->Branch("j_phi",&j_phi);
   tree_->Branch("j_g",&j_g);
   tree_->Branch("j_deepB",&j_deepB);
+  tree_->Branch("j_partflav",&j_partflav);
+  tree_->Branch("j_hadflav",&j_hadflav);
   tree_->Branch("pf_pt",&pf_pt);
   tree_->Branch("pf_eta",&pf_eta);
   tree_->Branch("pf_phi",&pf_phi);
@@ -492,6 +496,8 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     j_pt.push_back(jet->pt());
     j_eta.push_back(jet->eta());
     j_phi.push_back(jet->phi());
+    j_partflav.push_back(jet->partonFlavour());
+    j_hadflav.push_back(jet->hadronFlavour());
     j_deepB.push_back(jet->bDiscriminator("pfDeepFlavourJetTags:probb") + jet->bDiscriminator("pfDeepFlavourJetTags:probbb") + jet->bDiscriminator("pfDeepFlavourJetTags:problepb"));
     int igenjet = -1;
     bool good = false;
