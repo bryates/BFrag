@@ -94,6 +94,97 @@ class JetAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::Service<TFileService> fs;
 
       // ----------member data ---------------------------
+
+  //Vertex and triggers
+  Int_t nvtx;
+  Int_t muTrigger;
+  Int_t elTrigger;
+
+  //Leptons
+  Int_t nl;
+  Bool_t isPromptFinalState[500];
+  Bool_t isDirectPromptTauDecayProductFinalState[500];
+  Int_t l_id[500];
+  Float_t l_g[500];
+  Float_t l_charge[500];
+  Float_t l_pt[500];
+  Float_t l_eta[500];
+  Float_t l_phi[500];
+  Float_t l_mass[500];
+  Float_t l_g_pt[500];
+  Float_t l_g_eta[500];
+  Float_t l_g_phi[500];
+  Float_t l_g_mass[500];
+  Float_t l_g_id[500];
+  Int_t l_pid[500];
+  Float_t l_chargedHadronIso[500];
+  Float_t l_relIso[500];
+  Float_t l_ip3d[500];
+  Float_t l_ip3dsig[500];
+  Float_t l_dxy[500];
+  Float_t l_dxyE[500];
+  Float_t l_dz[500];
+  Float_t l_dzE[500];
+  Bool_t l_global[500];
+  Float_t l_pf[500];
+  Float_t l_nValTrackerHits[500];
+  Float_t l_nValPixelHits[500];
+  Float_t l_nMatchedStations[500];
+  Float_t l_pixelLayerWithMeasurement[500];
+  Float_t l_trackerLayersWithMeasurement[500];
+  Float_t l_validFraction[500];
+  Float_t l_chi2LocalPosition[500];
+  Float_t l_trkKink[500];
+  Float_t l_chi2norm[500];
+  Float_t l_globalTrackNumberOfValidHits[500];
+
+  // Jets
+  Int_t nj;
+  Int_t ng;
+  Int_t npf;
+  Float_t j_pt[500];
+  Float_t j_eta[500];
+  Float_t j_phi[500];
+  Int_t j_g[500];
+  Float_t j_deepB[500];
+  Float_t j_partflav[500];
+  Float_t j_hadflav[500];
+  Float_t pf_pt[500];
+  Float_t pf_eta[500];
+  Float_t pf_phi[500];
+  Int_t pf_id[500];
+  Float_t pf_j[500];
+  Float_t pf_g_pt[500];
+  Float_t pf_g_eta[500];
+  Float_t pf_g_phi[500];
+  Int_t pf_g_id[500];
+  Float_t pf_g_j[500];
+  Float_t g_j_pt[500];
+  Float_t g_j_eta[500];
+  Float_t g_j_phi[500];
+  Int_t g_j_id[500];
+  Float_t g_pt[500];
+  Float_t g_eta[500];
+  Float_t g_phi[500];
+  Int_t g_id[500];
+
+  //Fragmentation stuff
+  /*
+  std::vector<float> d0_mass;
+  std::vector<float> d0_pt;
+  std::vector<float> jpsi_mass;
+  std::vector<float> jpsi_pt;
+  std::vector<float> meson_j;
+  //std::vector<float> xb;
+  */
+  Int_t nmeson;
+  Int_t meson_j[500];
+  Float_t d0_mass[500];
+  Float_t d0_pt[500];
+  Float_t jpsi_mass[500];
+  Float_t jpsi_pt[500];
+  Float_t xb[500];
+
 };
 
 //
@@ -125,6 +216,91 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
    //tree_ = new TTree("data","Tree with vectors");
    tree_ = fs->make<TTree>("JetData","JetData");
 
+  //Vertex and triggers
+  tree_->Branch("nvtx", &nvtx, "nvtx/I");
+  tree_->Branch("muTrigger", &muTrigger, "muTrigger/I");
+  tree_->Branch("elTrigger", &elTrigger, "elTrigger/I");
+
+  //Leptons
+  tree_->Branch("nl", &nl, "nl/I");
+  tree_->Branch("isPromptFinalState[500]", &isPromptFinalState[500], "isPromptFinalState[nl]/B");
+  tree_->Branch("isDirectPromptTauDecayProductFinalState[500]", &isDirectPromptTauDecayProductFinalState[500], "isDirectPromptTauDecayProductFinalState[nl]/B");
+  tree_->Branch("l_id[500]", &l_id[500], "l_id[nl]/I");
+  tree_->Branch("l_g[500]", &l_g[500], "l_g[nl]/F");
+  tree_->Branch("l_charge[500]", &l_charge[500], "l_charge[nl]/F");
+  tree_->Branch("l_pt[500]", &l_pt[500], "l_pt[nl]/F");
+  tree_->Branch("l_eta[500]", &l_eta[500], "l_eta[nl]/F");
+  tree_->Branch("l_phi[500]", &l_phi[500], "l_phi[nl]/F");
+  tree_->Branch("l_mass[500]", &l_mass[500], "l_mass[nl]/F");
+  tree_->Branch("l_g_pt[500]", &l_g_pt[500], "l_g_pt[nl]/F");
+  tree_->Branch("l_g_eta[500]", &l_g_eta[500], "l_g_eta[nl]/F");
+  tree_->Branch("l_g_phi[500]", &l_g_phi[500], "l_g_phi[nl]/F");
+  tree_->Branch("l_g_mass[500]", &l_g_mass[500], "l_g_mass[nl]/F");
+  tree_->Branch("l_g_id[500]", &l_g_id[500], "l_g_id[nl]/F");
+  tree_->Branch("l_pid[500]", &l_pid[500], "l_pid[nl]/I");
+  tree_->Branch("l_chargedHadronIso[500]", &l_chargedHadronIso[500], "l_chargedHadronIso[nl]/F");
+  tree_->Branch("l_relIso[500]", &l_relIso[500], "l_relIso[nl]/F");
+  tree_->Branch("l_ip3d[500]", &l_ip3d[500], "l_ip3d[nl]/F");
+  tree_->Branch("l_ip3dsig[500]", &l_ip3dsig[500], "l_ip3dsig[nl]/F");
+  tree_->Branch("l_dxy[500]", &l_dxy[500], "l_dxy[nl]/F");
+  tree_->Branch("l_dxyE[500]", &l_dxyE[500], "l_dxyE[nl]/F");
+  tree_->Branch("l_dz[500]", &l_dz[500], "l_dz[nl]/F");
+  tree_->Branch("l_dzE[500]", &l_dzE[500], "l_dzE[nl]/F");
+  tree_->Branch("l_global[500]", &l_global[500], "l_global[nl]/B");
+  tree_->Branch("l_pf[500]", &l_pf[500], "l_pf[nl]/F");
+  tree_->Branch("nj", &nj, "nj/I");
+  tree_->Branch("l_nValTrackerHits[500]", &l_nValTrackerHits[500], "l_nValTrackerHits[nl]/F");
+  tree_->Branch("l_nValPixelHits[500]", &l_nValPixelHits[500], "l_nValPixelHits[nl]/F");
+  tree_->Branch("l_nMatchedStations[500]", &l_nMatchedStations[500], "l_nMatchedStations[nl]/F");
+  tree_->Branch("l_pixelLayerWithMeasurement[500]", &l_pixelLayerWithMeasurement[500], "l_pixelLayerWithMeasurement[nl]/F");
+  tree_->Branch("l_trackerLayersWithMeasurement[500]", &l_trackerLayersWithMeasurement[500], "l_trackerLayersWithMeasurement[nl]/F");
+  tree_->Branch("l_validFraction[500]", &l_validFraction[500], "l_validFraction[nl]/F");
+  tree_->Branch("l_chi2LocalPosition[500]", &l_chi2LocalPosition[500], "l_chi2LocalPosition[nl]/F");
+  tree_->Branch("l_trkKink[500]", &l_trkKink[500], "l_trkKink[nl]/F");
+  tree_->Branch("l_chi2norm[500]", &l_chi2norm[500], "l_chi2norm[nl]/F");
+  tree_->Branch("l_globalTrackNumberOfValidHits[500]", &l_globalTrackNumberOfValidHits[500], "l_globalTrackNumberOfValidHits[nl]/F");
+
+  tree_->Branch("nj", &nj, "nj/I");
+  tree_->Branch("ng", &ng, "ng/I");
+  tree_->Branch("npf", &npf, "npf/I");
+  tree_->Branch("j_pt", j_pt, "j_pt[nj]/F");
+  tree_->Branch("j_eta", j_eta, "j_eta[nj]/F");
+  tree_->Branch("j_phi", j_phi, "j_phi[nj]/F");
+  tree_->Branch("j_g", j_g, "j_g[nj]/I");
+  tree_->Branch("j_deepB", j_deepB, "j_deepB[nj]/F");
+  tree_->Branch("j_partflav", j_partflav, "j_partflav[nj]/F");
+  tree_->Branch("j_hadflav", j_hadflav, "j_hadflav[nj]/F");
+  tree_->Branch("pf_pt", pf_pt, "pf_pt[npf]/F");
+  tree_->Branch("pf_eta", pf_eta, "pf_eta[npf]/F");
+  tree_->Branch("pf_phi", pf_phi, "pf_phi[npf]/F");
+  tree_->Branch("pf_id", pf_id, "pf_id[npf]/I");
+  tree_->Branch("pf_j", pf_j, "pf_j[npf]/F");
+  tree_->Branch("pf_g_pt", pf_g_pt, "pf_g_pt[npf]/F");
+  tree_->Branch("pf_g_eta", pf_g_eta, "pf_g_eta[npf]/F");
+  tree_->Branch("pf_g_phi", pf_g_phi, "pf_g_phi[npf]/F");
+  tree_->Branch("pf_g_id", pf_g_id, "pf_g_id[npf]/I");
+  tree_->Branch("pf_g_j", pf_g_j, "pf_g_j[npf]/F");
+  tree_->Branch("g_j_pt", g_j_pt, "g_j_pt[ng]/F");
+  tree_->Branch("g_j_eta", g_j_eta, "g_j_eta[ng]/F");
+  tree_->Branch("g_j_phi", g_j_phi, "g_j_phi[ng]/F");
+  tree_->Branch("g_j_id", g_j_id, "g_j_id[ng]/I");
+  tree_->Branch("g_pt", g_pt, "g_pt[ng]/F");
+  tree_->Branch("g_eta", g_eta, "g_eta[ng]/F");
+  tree_->Branch("g_phi", g_phi, "g_phi[ng]/F");
+  tree_->Branch("g_id", g_id, "g_id[ng]/I");
+
+  //Fragmentation stuff
+  tree_->Branch("d0_mass",&d0_mass);
+  tree_->Branch("d0_pt",&d0_pt);
+  tree_->Branch("jpsi_mass",&jpsi_mass);
+  tree_->Branch("jpsi_pt",&jpsi_pt);
+  tree_->Branch("nmeson", &nmeson, "nmeson/I");
+  tree_->Branch("meson_j",&meson_j, "meson_j[nmeson]/I");
+  tree_->Branch("d0_mass", &d0_mass, "d0_mass[nmeson]/F");
+  tree_->Branch("d0_pt", &d0_pt, "d0_pt[nmeson]/F");
+  tree_->Branch("jpsi_mass", &jpsi_mass, "jpsi_mass[nmeson]/F");
+  tree_->Branch("jpsi_pt", &jpsi_pt, "jpsi_pt[nmeson]/F");
+  tree_->Branch("xb", xb, "xb[nmeson]/F");
 }
 
 
@@ -183,9 +359,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (vertices->empty()) return; // skip the event if no PV found
   const reco::Vertex &primVtx = vertices->front();
   reco::VertexRef primVtxRef(vertices,0);
-  std::vector<int> n_vtx;
-  tree_->Branch("n_vtx",&n_vtx);
-  n_vtx.push_back(vertices->size());
+  nvtx = vertices->size();
   if(n_vtx.size()==0) return;
 
   //TRIGGER INFORMATION
@@ -194,10 +368,6 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   std::vector<std::string> triggerList;
   edm::Service<edm::service::TriggerNamesService> tns;
   tns->getTrigPaths(*h_trigRes,triggerList);
-  std::vector<int> muTrigger;
-  std::vector<int> elTrigger;
-  tree_->Branch("muTrigger",&muTrigger);
-  tree_->Branch("elTrigger",&elTrigger);
   int mutrig = 0;
   int eltrig = 0;
   for (unsigned int i=0; i< h_trigRes->size(); i++) {
@@ -213,86 +383,17 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  eltrig |= (1 << iel);
 	}
   }
-  muTrigger.push_back(mutrig);
-  elTrigger.push_back(eltrig);
+  muTrigger = mutrig;
+  elTrigger = eltrig;
   bool passMuTrigger(isData ? mutrig!=0 : true);
   bool passElTrigger(isData ? eltrig!=0 : true);  
   if(!passMuTrigger && !passElTrigger) return;
 
   int nleptons(0);
+  nl = 0;
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
-  std::vector<bool> isPromptFinalState;
-  tree_->Branch("isPromptFinalState",&isPromptFinalState);
-  std::vector<bool> isDirectPromptTauDecayProductFinalState;
-  tree_->Branch("isDirectPromptTauDecayProductFinalState",&isDirectPromptTauDecayProductFinalState);
-  std::vector<int> l_id;
-  tree_->Branch("l_id",&l_id);
-  std::vector<float> l_g;
-  tree_->Branch("l_g",&l_g);
-  std::vector<float> l_charge;
-  tree_->Branch("l_charge",&l_charge);
-  std::vector<float> l_pt;
-  tree_->Branch("l_pt",&l_pt);
-  std::vector<float> l_eta;
-  tree_->Branch("l_eta",&l_eta);
-  std::vector<float> l_phi;
-  tree_->Branch("l_phi",&l_phi);
-  std::vector<float> l_mass;
-  tree_->Branch("l_mass",&l_mass);
-  std::vector<float> l_g_pt;
-  tree_->Branch("l_g_pt",&l_g_pt);
-  std::vector<float> l_g_eta;
-  tree_->Branch("l_g_eta",&l_g_eta);
-  std::vector<float> l_g_phi;
-  tree_->Branch("l_g_phi",&l_g_phi);
-  std::vector<float> l_g_mass;
-  tree_->Branch("l_g_mass",&l_g_mass);
-  std::vector<float> l_g_id;
-  tree_->Branch("l_g_id",&l_g_id);
-  std::vector<int> l_pid;
-  tree_->Branch("l_pid",&l_pid);
-  std::vector<float> l_chargedHadronIso;
-  tree_->Branch("l_chargedHadronIso",&l_chargedHadronIso);
-  std::vector<float> l_relIso;
-  tree_->Branch("l_relIso",&l_relIso);
-  std::vector<float> l_ip3d;
-  tree_->Branch("l_ip3d",&l_ip3d);
-  std::vector<float> l_ip3dsig;
-  tree_->Branch("l_ip3dsig",&l_ip3dsig);
-  std::vector<float> l_dxy;
-  tree_->Branch("l_dxy",&l_dxy);
-  std::vector<float> l_dxyE;
-  tree_->Branch("l_dxyE",&l_dxyE);
-  std::vector<float> l_dz;
-  tree_->Branch("l_dz",&l_dz);
-  std::vector<float> l_dzE;
-  tree_->Branch("l_dzE",&l_dzE);
-  std::vector<bool> l_global;
-  tree_->Branch("l_global",&l_global);
-  std::vector<float> l_pf;
-  tree_->Branch("l_pf",&l_pf);
-  std::vector<float> l_nValTrackerHits;
-  tree_->Branch("l_nValTrackerHits",&l_nValTrackerHits);
-  std::vector<float> l_nValPixelHits;
-  tree_->Branch("l_nValPixelHits",&l_nValPixelHits);
-  std::vector<float> l_nMatchedStations;
-  tree_->Branch("l_nMatchedStations",&l_nMatchedStations);
-  std::vector<float> l_pixelLayerWithMeasurement;
-  tree_->Branch("l_pixelLayerWithMeasurement",&l_pixelLayerWithMeasurement);
-  std::vector<float> l_trackerLayersWithMeasurement;
-  tree_->Branch("l_trackerLayersWithMeasurement",&l_trackerLayersWithMeasurement);
-  std::vector<float> l_validFraction;
-  tree_->Branch("l_validFraction",&l_validFraction);
-  std::vector<float> l_chi2LocalPosition;
-  tree_->Branch("l_chi2LocalPosition",&l_chi2LocalPosition);
-  std::vector<float> l_trkKink;
-  tree_->Branch("l_trkKink",&l_trkKink);
-  std::vector<float> l_chi2norm;
-  tree_->Branch("l_chi2norm",&l_chi2norm);
-  std::vector<float> l_globalTrackNumberOfValidHits;
-  tree_->Branch("l_globalTrackNumberOfValidHits",&l_globalTrackNumberOfValidHits);
   for (const pat::Muon &mu : *muons) 
     { 
       //correct the 4-momentum
@@ -328,66 +429,67 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       //save it
       const reco::GenParticle * gen=mu.genLepton(); 
-      isPromptFinalState.push_back(gen ? gen->isPromptFinalState() : false);
-      isDirectPromptTauDecayProductFinalState.push_back(gen ? gen->isDirectPromptTauDecayProductFinalState() : false);
-      l_id.push_back(mu.pdgId());
-      l_charge.push_back(mu.charge());
-      l_pt.push_back(mu.pt());
-      l_eta.push_back(mu.eta());
-      l_phi.push_back(mu.phi());
-      l_mass.push_back(mu.mass());
+      isPromptFinalState[nl] = gen ? gen->isPromptFinalState() : false;
+      isDirectPromptTauDecayProductFinalState[nl] = gen ? gen->isDirectPromptTauDecayProductFinalState() : false;
+      l_id[nl] = mu.pdgId();
+      l_charge[nl] = mu.charge();
+      l_pt[nl] = mu.pt();
+      l_eta[nl] = mu.eta();
+      l_phi[nl] = mu.phi();
+      l_mass[nl] = mu.mass();
       if(gen != nullptr) {
         //save the gen-matched muon
-        l_g_pt.push_back(gen->pt());
-        l_g_eta.push_back(gen->eta());
-        l_g_phi.push_back(gen->phi());
-        l_g_mass.push_back(gen->mass());
-        l_g_id.push_back(gen->pdgId());
+        l_g_pt[nl] = gen->pt();
+        l_g_eta[nl] = gen->eta();
+        l_g_phi[nl] = gen->phi();
+        l_g_mass[nl] = gen->mass();
+        l_g_id[nl] = gen->pdgId();
       }
-      l_pid.push_back((isTight | (isMedium<<1) | (isLoose<<2) | (isSoft<<3)));
-      l_chargedHadronIso.push_back(mu.pfIsolationR04().sumChargedHadronPt);
-      l_relIso.push_back(mu.passed(reco::Muon::PFIsoTight) |      // tight is l_relIso[imu]&0b1
-                         mu.passed(reco::Muon::PFIsoMedium)<<1 | 
-                         mu.passed(reco::Muon::PFIsoLoose)<<2);
+      l_pid[nl] = (isTight | (isMedium<<1) | (isLoose<<2) | (isSoft<<3));
+      l_chargedHadronIso[nl] = mu.pfIsolationR04().sumChargedHadronPt;
+      l_relIso[nl] = (mu.passed(reco::Muon::PFIsoTight) |      // tight is l_relIso[imu]&0b1
+                      mu.passed(reco::Muon::PFIsoMedium)<<1 | 
+                      mu.passed(reco::Muon::PFIsoLoose)<<2);
       float t_l_ip3d(-9999.);
       float t_l_ip3dsig(-9999);
       if(mu.outerTrack().isNonnull()) {
-        l_dxy.push_back(mu.dB());
-        l_dxyE.push_back(mu.edB());
+        l_dxy[nl] = mu.dB();
+        l_dxyE[nl] = mu.edB();
       }
       if(mu.innerTrack().isNonnull()) {
-        //l_dxy.push_back(mu.dB());
-        //l_dxyE.push_back(mu.edB());
-        l_dxy.push_back(mu.innerTrack()->dxy(primVtx.position()));
-        l_dxyE.push_back(mu.innerTrack()->dxyError());
-        l_dz.push_back(mu.innerTrack()->dz(primVtx.position()));
-        l_dzE.push_back(mu.innerTrack()->dzError());
-        t_l_ip3d = sqrt(pow(l_dxy.back(), 2) + pow(l_dz.back(), 2));
-        float l_ip3d_err = sqrt(pow(l_dxyE.back(), 2) + pow(l_dzE.back(), 2));
+        //l_dxy[nl] = mu.dB();
+        //l_dxyE[nl] = mu.edB();
+        l_dxy[nl] = mu.innerTrack()->dxy(primVtx.position());
+        l_dxyE[nl] = mu.innerTrack()->dxyError();
+        l_dz[nl] = mu.innerTrack()->dz(primVtx.position());
+        l_dzE[nl] = mu.innerTrack()->dzError();
+        t_l_ip3d = sqrt(pow(l_dxy[nl], 2) + pow(l_dz[nl], 2));
+        float l_ip3d_err = sqrt(pow(l_dxyE[nl], 2) + pow(l_dzE[nl], 2));
         t_l_ip3dsig = t_l_ip3d / l_ip3d_err;
-        l_global.push_back(mu.isGlobalMuon());
-        l_pf.push_back(mu.isPFMuon());
-        l_nValTrackerHits.push_back(mu.innerTrack()->hitPattern().numberOfValidTrackerHits());
-        l_nValPixelHits.push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-        l_nMatchedStations.push_back(mu.numberOfMatchedStations());
-        l_pixelLayerWithMeasurement.push_back( mu.innerTrack()->hitPattern().pixelLayersWithMeasurement());
-        l_trackerLayersWithMeasurement.push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());
+        l_global[nl] = mu.isGlobalMuon();
+        l_pf[nl] = mu.isPFMuon();
+        l_nValTrackerHits[nl] = mu.innerTrack()->hitPattern().numberOfValidTrackerHits();
+        l_nValPixelHits[nl] = mu.innerTrack()->hitPattern().numberOfValidPixelHits();
+        l_nMatchedStations[nl] = mu.numberOfMatchedStations();
+        l_pixelLayerWithMeasurement[nl] =  mu.innerTrack()->hitPattern().pixelLayersWithMeasurement();
+        l_trackerLayersWithMeasurement[nl] = mu.innerTrack()->hitPattern().trackerLayersWithMeasurement();
 
         //Medium
-        l_validFraction.push_back(mu.innerTrack()->validFraction());
-        l_chi2LocalPosition.push_back(mu.combinedQuality().chi2LocalPosition);
-        l_trkKink.push_back(mu.combinedQuality().trkKink);
+        l_validFraction[nl] = mu.innerTrack()->validFraction();
+        l_chi2LocalPosition[nl] = mu.combinedQuality().chi2LocalPosition;
+        l_trkKink[nl] = mu.combinedQuality().trkKink;
       }
-	  l_ip3d.push_back(t_l_ip3d);
-	  l_ip3dsig.push_back(t_l_ip3dsig);
+	  l_ip3d[nl] = t_l_ip3d;
+	  l_ip3dsig[nl] = t_l_ip3dsig;
 
       if (mu.globalTrack().isNonnull()) {
-        l_chi2norm.push_back(mu.normChi2());
-        l_global.push_back(mu.isGlobalMuon());
-        l_pf.push_back(mu.isPFMuon());
-        l_globalTrackNumberOfValidHits.push_back(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
-        l_nMatchedStations.push_back(mu.numberOfMatchedStations());
+        l_chi2norm[nl] = mu.normChi2();
+        l_global[nl] = mu.isGlobalMuon();
+        l_pf[nl] = mu.isPFMuon();
+        l_globalTrackNumberOfValidHits[nl] = mu.globalTrack()->hitPattern().numberOfValidMuonHits();
+        l_nMatchedStations[nl] = mu.numberOfMatchedStations();
       }
+      nl++;
       nleptons += ( isTight && mu.pt()>25 && fabs(mu.eta())<2.5); 
     }
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -417,44 +519,45 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       bool passLooseId  = el.electronID("cutBasedElectronID-Fall17-94X-V2-loose");
       bool passMediumId = el.electronID("cutBasedElectronID-Fall17-94X-V2-medium");
       bool passTightId  = el.electronID("cutBasedElectronID-Fall17-94X-V2-tight");
-      l_pid.push_back(passTightId | (passMediumId<<1) | (passLooseId<<2) | (passVetoId<<3));
+      l_pid[nl] = passTightId | (passMediumId<<1) | (passLooseId<<2) | (passVetoId<<3);
 
       //save the electron
       const reco::GenParticle * gen=el.genLepton(); 
-      isPromptFinalState.push_back(gen ? gen->isPromptFinalState() : false);
-      isDirectPromptTauDecayProductFinalState.push_back(gen ? gen->isDirectPromptTauDecayProductFinalState() : false);
-      l_id.push_back(el.pdgId());
-      l_charge.push_back(el.charge());
-      l_pt.push_back(el.pt());
-      l_eta.push_back(el.eta());
-      l_phi.push_back(el.phi());
-      l_mass.push_back(el.mass());
+      isPromptFinalState[nl] = gen ? gen->isPromptFinalState() : false;
+      isDirectPromptTauDecayProductFinalState[nl] = gen ? gen->isDirectPromptTauDecayProductFinalState() : false;
+      l_id[nl] = el.pdgId();
+      l_charge[nl] = el.charge();
+      l_pt[nl] = el.pt();
+      l_eta[nl] = el.eta();
+      l_phi[nl] = el.phi();
+      l_mass[nl] = el.mass();
       if(gen != nullptr) {
         //save the gen-matched electron
-        l_g_pt.push_back(gen->pt());
-        l_g_eta.push_back(gen->eta());
-        l_g_phi.push_back(gen->phi());
-        l_g_mass.push_back(gen->mass());
-        l_g_id.push_back(gen->pdgId());
+        l_g_pt[nl] = gen->pt();
+        l_g_eta[nl] = gen->eta();
+        l_g_phi[nl] = gen->phi();
+        l_g_mass[nl] = gen->mass();
+        l_g_id[nl] = gen->pdgId();
       }
       double neutral = el.pfIsolationVariables().sumNeutralHadronEt + el.pfIsolationVariables().sumPhotonEt  - 0.5*el.pfIsolationVariables().sumPUPt;
       if(neutral < 0) neutral = 0;
-      l_relIso.push_back((el.pfIsolationVariables().sumChargedHadronPt+ neutral)/el.pt());     
-      l_chargedHadronIso.push_back(el.chargedHadronIso());
+      l_relIso[nl] = (el.pfIsolationVariables().sumChargedHadronPt+ neutral)/el.pt();     
+      l_chargedHadronIso[nl] = el.chargedHadronIso();
       float t_l_ip3d(-9999.);
       float t_l_ip3dsig(-9999);
       if(el.gsfTrack().get()) {
-        l_dxy.push_back(el.gsfTrack()->dxy(primVtx.position()));
-        l_dxyE.push_back(el.gsfTrack()->dxyError());
-        l_dz.push_back(el.gsfTrack()->dz(primVtx.position()));
-        l_dzE.push_back(el.gsfTrack()->dzError());
-        t_l_ip3d = sqrt(pow(l_dxy.back(), 2) + pow(l_dz.back(), 2));
+        l_dxy[nl] = el.gsfTrack()->dxy(primVtx.position());
+        l_dxyE[nl] = el.gsfTrack()->dxyError();
+        l_dz[nl] = el.gsfTrack()->dz(primVtx.position());
+        l_dzE[nl] = el.gsfTrack()->dzError();
+        t_l_ip3d = sqrt(pow(l_dxy[nl], 2) + pow(l_dz[nl], 2));
         //t_l_ip3d = fabs(el.dB(pat::Electron::PV3D))/el.edB(pat::Electron::PV3D);
-        float l_ip3d_err = sqrt(pow(l_dxyE.back(), 2) + pow(l_dzE.back(), 2));
+        float l_ip3d_err = sqrt(pow(l_dxyE[nl], 2) + pow(l_dzE[nl], 2));
         t_l_ip3dsig = t_l_ip3d / l_ip3d_err;
 	  }
-	  l_ip3d.push_back(t_l_ip3d);
-	  l_ip3dsig.push_back(t_l_ip3dsig);
+	  l_ip3d[nl] = t_l_ip3d;
+	  l_ip3dsig[nl] = t_l_ip3dsig;
+      nl++;
       nleptons += (passTightId && el.pt()>25 && fabs(el.eta())<2.5);
     }
 
@@ -469,106 +572,70 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(genJetsToken_, genJets);
 
 
-  std::vector<float> j_pt;
-  std::vector<float> j_eta;
-  std::vector<float> j_phi;
-  std::vector<float> j_g;
-  std::vector<float> j_deepB;
-  std::vector<float> j_partflav;
-  std::vector<float> j_hadflav;
-  std::vector<float> pf_pt;
-  std::vector<float> pf_eta;
-  std::vector<float> pf_phi;
-  std::vector<float> pf_id;
-  std::vector<float> pf_j;
-  std::vector<float> pf_g_pt;
-  std::vector<float> pf_g_eta;
-  std::vector<float> pf_g_phi;
-  std::vector<float> pf_g_id;
-  std::vector<float> pf_g_j;
-  std::vector<float> g_j_pt;
-  std::vector<float> g_j_eta;
-  std::vector<float> g_j_phi;
-  std::vector<float> g_j_id;
-  std::vector<float> g_pt;
-  std::vector<float> g_eta;
-  std::vector<float> g_phi;
-  std::vector<float> g_id;
-  tree_->Branch("j_pt",&j_pt);
-  tree_->Branch("j_eta",&j_eta);
-  tree_->Branch("j_phi",&j_phi);
-  tree_->Branch("j_g",&j_g);
-  tree_->Branch("j_deepB",&j_deepB);
-  tree_->Branch("j_partflav",&j_partflav);
-  tree_->Branch("j_hadflav",&j_hadflav);
-  tree_->Branch("pf_pt",&pf_pt);
-  tree_->Branch("pf_eta",&pf_eta);
-  tree_->Branch("pf_phi",&pf_phi);
-  tree_->Branch("pf_id",&pf_id);
-  tree_->Branch("pf_j",&pf_j);
-  tree_->Branch("pf_g_pt",&pf_g_pt);
-  tree_->Branch("pf_g_eta",&pf_g_eta);
-  tree_->Branch("pf_g_phi",&pf_g_phi);
-  tree_->Branch("pf_g_id",&pf_g_id);
-  tree_->Branch("pf_g_j",&pf_g_j);
-  tree_->Branch("g_j_pt",&g_j_pt);
-  tree_->Branch("g_j_eta",&g_j_eta);
-  tree_->Branch("g_j_phi",&g_j_phi);
-  tree_->Branch("g_j_id",&g_j_id);
-  tree_->Branch("g_pt",&g_pt);
-  tree_->Branch("g_eta",&g_eta);
-  tree_->Branch("g_phi",&g_phi);
-  tree_->Branch("g_id",&g_id);
   bool matched[genJets->size()] = {false};
+
+  // Fragmentation stuff
+  nmeson = 0;
+  nj = 0;
+  ng = 0;
+  npf = 0;
+  std::cout << "Starting" << std::endl;
   for(auto jet = jets->begin();  jet != jets->end(); ++jet) {
     //saveJetConstituentPt(jet, recoJetConstituentPt, genJetConstituentPt, genJets);
 
     // Loop over the jet constituents
-    //int j_g = -1;
-    double minDeltaR = 999.;
-    double min_jet_dR = 0.01;
-    double genPt = -1.;
-    double genEta = -1.;
-    double genPhi = -1.;
-    j_pt.push_back(jet->pt());
-    j_eta.push_back(jet->eta());
-    j_phi.push_back(jet->phi());
-    j_partflav.push_back(jet->partonFlavour());
-    j_hadflav.push_back(jet->hadronFlavour());
-    j_deepB.push_back(jet->bDiscriminator("pfDeepFlavourJetTags:probb") + jet->bDiscriminator("pfDeepFlavourJetTags:probbb") + jet->bDiscriminator("pfDeepFlavourJetTags:problepb"));
+    j_g[nj] = -1;
+    float minDeltaR = 999.;
+    float min_jet_dR = 0.01;
+    float genPt = -1.;
+    float genEta = -1.;
+    float genPhi = -1.;
+    j_pt[nj] = jet->pt();
+    j_eta[nj] = jet->eta();
+    j_phi[nj] = jet->phi();
+    j_partflav[nj] = jet->partonFlavour();
+    j_hadflav[nj] = jet->hadronFlavour();
+    j_deepB[nj] = jet->bDiscriminator("pfDeepFlavourJetTags:probb") + jet->bDiscriminator("pfDeepFlavourJetTags:probbb") + jet->bDiscriminator("pfDeepFlavourJetTags:problepb");
     int igenjet = -1;
     bool good = false;
     for (const auto& genJet : *genJets) {
       igenjet++;
       if(matched[igenjet]) continue; // Already matched this jet
       //double jet_dR = pow(jet->eta() - genJet.eta(), 2) + pow(jet->phi() - genJet.phi(), 2);
-      double jet_dR = reco::deltaR(*jet, genJet);
+      float jet_dR = reco::deltaR(*jet, genJet);
       if(jet_dR < min_jet_dR) {
         min_jet_dR = jet_dR;
         good = true;
+        j_g[nj] = igenjet;
       }
     }
     if(good) {
-      j_g.push_back(igenjet);
+      //j_g[nj] = igenjet;
       matched[igenjet] = true;
     }
-    else j_g.push_back(-1);
-    good = false;
+    //else j_g[nj] = -1;
+    //good = false;
+    std::vector<const reco::Candidate*> pions;
+    std::vector<const reco::Candidate*> muons;
     for(unsigned int i = 0; i < jet->numberOfDaughters(); ++i) {
       const reco::Candidate* constituent = jet->daughter(i);
+      if(constituent->pt() < 1) continue; // Only save pT >= 1 GeV
+      if(constituent->charge() == 0) continue;
 
       // Save the reco level pt of the jet constituent
 
       // Find the gen jet constituent with the smallest delta R
+      if(abs(constituent->pdgId()) == 211) pions.push_back(constituent);
+      else if(abs(constituent->pdgId()) == 13) muons.push_back(constituent);
       for (const auto& genJet : *genJets) {
-        g_j_id.push_back(genJet.pdgId());
-        g_j_pt.push_back(genJet.pt());
-        g_j_eta.push_back(genJet.eta());
-        g_j_phi.push_back(genJet.phi());
-        g_j_id.push_back(genJet.pdgId());
+        g_j_id[ng] = genJet.pdgId();
+        g_j_pt[ng] = genJet.pt();
+        g_j_eta[ng] = genJet.eta();
+        g_j_phi[ng] = genJet.phi();
+        g_j_id[ng] = genJet.pdgId();
         for (unsigned int iGen = 0; iGen < genJet.numberOfDaughters(); ++iGen) {
           const reco::Candidate* genConstituent = genJet.daughter(iGen);
-          double deltaR = reco::deltaR(*genConstituent, *constituent);
+          float deltaR = reco::deltaR(*genConstituent, *constituent);
           if (deltaR < minDeltaR) {
               minDeltaR = deltaR;
               genPt = genConstituent->pt();
@@ -576,22 +643,69 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
               genPhi = genConstituent->phi();
           }
         }
+        ng++;
       }
       if(constituent->charge() != 0) {
-        pf_j.push_back(j_pt.size()-1);
-        pf_pt.push_back(constituent->pt());
-        pf_eta.push_back(constituent->eta());
-        pf_phi.push_back(constituent->phi());
-        pf_id.push_back(constituent->pdgId());
-        pf_g_pt.push_back(genPt);
-        pf_g_eta.push_back(genEta);
-        pf_g_phi.push_back(genPhi);
-        pf_g_id.push_back(constituent->pdgId());
-        pf_g_j.push_back(g_pt.size()-1);
+        pf_j[npf] = nj;
+        pf_pt[npf] = constituent->pt();
+        pf_eta[npf] = constituent->eta();
+        pf_phi[npf] = constituent->phi();
+        pf_id[npf] = constituent->pdgId();
+        pf_g_pt[npf] = genPt;
+        pf_g_eta[npf] = genEta;
+        pf_g_phi[npf] = genPhi;
+        pf_g_id[npf] = constituent->pdgId();
+        pf_g_j[npf] = ng;
+        npf++;
       }
     }
+
+    // Loose check for charmed mesons
+    if(pions.size() >= 2) {
+      const float gMassK(0.4937),gMassPi(0.1396);
+      for(size_t ipi = 0; ipi < pions.size(); ipi++) {
+        for(size_t ik = 0; ik < pions.size(); ik++) { // Check all pairs for mass hypothesis (pi,K) and (K,pi)
+          if(ipi == ik) continue;
+          TLorentzVector pi;
+          TLorentzVector k;
+          pi.SetPtEtaPhiM(pions[ipi]->p4().Pt(), pions[ipi]->p4().eta(), pions[ipi]->p4().phi(), gMassPi);
+          k.SetPtEtaPhiM(pions[ik]->p4().Pt(), pions[ik]->p4().eta(), pions[ik]->p4().phi(), gMassK);
+          float mass = (pi+k).M();
+          float pt = (pi+k).Pt();
+          if(mass < 1.7 || mass > 2.0) continue; // Loose D0 mass window
+          d0_mass[nmeson] = mass;
+          d0_pt[nmeson] = pt;
+          meson_j[nmeson] = nj;
+          //xb.push_back(pt / jet->pt());
+          xb[nmeson] = pt / jet->pt();
+          nmeson++;
+        }
+      }
+    }
+    if(muons.size() >= 2) {
+      const float gMassMu(0.1057);
+      for(size_t imu1 = 0; imu1 < muons.size(); imu1++) {
+        for(size_t imu2 = 0; imu2 < muons.size(); imu2++) { // Check all pairs for mass hypothesis (mu1,mu2) and (mu2,mu1)
+          if(imu1 == imu2) continue;
+          TLorentzVector mu1;
+          TLorentzVector mu2;
+          mu1.SetPtEtaPhiM(muons[imu1]->p4().Pt(), muons[imu1]->p4().eta(), muons[imu1]->p4().phi(), gMassMu);
+          mu2.SetPtEtaPhiM(muons[imu2]->p4().Pt(), muons[imu2]->p4().eta(), muons[imu2]->p4().phi(), gMassMu);
+          float mass = (mu1+mu2).M();
+          float pt = (mu1+mu2).Pt();
+          if(mass < 2.8 || mass > 3.4) continue; // Loose J/Psi mass window
+          jpsi_mass[nmeson] = mass;
+          meson_j[nmeson] = nj;
+          jpsi_pt[nmeson] = pt;
+          //xb.push_back(pt / jet->pt());
+          xb[nmeson] = pt / jet->pt();
+          nmeson++;
+        }
+      }
+    }
+    nj++;
   }
-  if(j_pt.size()==0) return;
+  if(nj==0) return;
   tree_->Fill();
 
 

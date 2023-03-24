@@ -8,6 +8,11 @@ scram b -j8
 cd BFrag/BFrag
 ```
 
+### Submitting to CRAB
+To submit a list of samples, described in a json file to the grid you can use the following script.
+```
+python scripts/submitToGrid.py -j data/UL/samples.json -c ${CMSSW_BASE}/src/BFrag/BFrag/test/runJetAnalyzer_cfg.py --lfn /store/group/phys_top/byates -s
+```
 ### Running a local test
 Initialize voms proxy (if needed):
 ```
