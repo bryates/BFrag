@@ -574,7 +574,6 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   nj = 0;
   ng = 0;
   npf = 0;
-  std::cout << "Starting" << std::endl;
   for(auto jet = jets->begin();  jet != jets->end(); ++jet) {
     //saveJetConstituentPt(jet, recoJetConstituentPt, genJetConstituentPt, genJets);
 
