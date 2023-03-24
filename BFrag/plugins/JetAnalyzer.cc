@@ -223,42 +223,41 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
 
   //Leptons
   tree_->Branch("nl", &nl, "nl/I");
-  tree_->Branch("isPromptFinalState[500]", &isPromptFinalState[500], "isPromptFinalState[nl]/B");
-  tree_->Branch("isDirectPromptTauDecayProductFinalState[500]", &isDirectPromptTauDecayProductFinalState[500], "isDirectPromptTauDecayProductFinalState[nl]/B");
-  tree_->Branch("l_id[500]", &l_id[500], "l_id[nl]/I");
-  tree_->Branch("l_g[500]", &l_g[500], "l_g[nl]/F");
-  tree_->Branch("l_charge[500]", &l_charge[500], "l_charge[nl]/F");
-  tree_->Branch("l_pt[500]", &l_pt[500], "l_pt[nl]/F");
-  tree_->Branch("l_eta[500]", &l_eta[500], "l_eta[nl]/F");
-  tree_->Branch("l_phi[500]", &l_phi[500], "l_phi[nl]/F");
-  tree_->Branch("l_mass[500]", &l_mass[500], "l_mass[nl]/F");
-  tree_->Branch("l_g_pt[500]", &l_g_pt[500], "l_g_pt[nl]/F");
-  tree_->Branch("l_g_eta[500]", &l_g_eta[500], "l_g_eta[nl]/F");
-  tree_->Branch("l_g_phi[500]", &l_g_phi[500], "l_g_phi[nl]/F");
-  tree_->Branch("l_g_mass[500]", &l_g_mass[500], "l_g_mass[nl]/F");
-  tree_->Branch("l_g_id[500]", &l_g_id[500], "l_g_id[nl]/F");
-  tree_->Branch("l_pid[500]", &l_pid[500], "l_pid[nl]/I");
-  tree_->Branch("l_chargedHadronIso[500]", &l_chargedHadronIso[500], "l_chargedHadronIso[nl]/F");
-  tree_->Branch("l_relIso[500]", &l_relIso[500], "l_relIso[nl]/F");
-  tree_->Branch("l_ip3d[500]", &l_ip3d[500], "l_ip3d[nl]/F");
-  tree_->Branch("l_ip3dsig[500]", &l_ip3dsig[500], "l_ip3dsig[nl]/F");
-  tree_->Branch("l_dxy[500]", &l_dxy[500], "l_dxy[nl]/F");
-  tree_->Branch("l_dxyE[500]", &l_dxyE[500], "l_dxyE[nl]/F");
-  tree_->Branch("l_dz[500]", &l_dz[500], "l_dz[nl]/F");
-  tree_->Branch("l_dzE[500]", &l_dzE[500], "l_dzE[nl]/F");
-  tree_->Branch("l_global[500]", &l_global[500], "l_global[nl]/B");
-  tree_->Branch("l_pf[500]", &l_pf[500], "l_pf[nl]/F");
-  tree_->Branch("nj", &nj, "nj/I");
-  tree_->Branch("l_nValTrackerHits[500]", &l_nValTrackerHits[500], "l_nValTrackerHits[nl]/F");
-  tree_->Branch("l_nValPixelHits[500]", &l_nValPixelHits[500], "l_nValPixelHits[nl]/F");
-  tree_->Branch("l_nMatchedStations[500]", &l_nMatchedStations[500], "l_nMatchedStations[nl]/F");
-  tree_->Branch("l_pixelLayerWithMeasurement[500]", &l_pixelLayerWithMeasurement[500], "l_pixelLayerWithMeasurement[nl]/F");
-  tree_->Branch("l_trackerLayersWithMeasurement[500]", &l_trackerLayersWithMeasurement[500], "l_trackerLayersWithMeasurement[nl]/F");
-  tree_->Branch("l_validFraction[500]", &l_validFraction[500], "l_validFraction[nl]/F");
-  tree_->Branch("l_chi2LocalPosition[500]", &l_chi2LocalPosition[500], "l_chi2LocalPosition[nl]/F");
-  tree_->Branch("l_trkKink[500]", &l_trkKink[500], "l_trkKink[nl]/F");
-  tree_->Branch("l_chi2norm[500]", &l_chi2norm[500], "l_chi2norm[nl]/F");
-  tree_->Branch("l_globalTrackNumberOfValidHits[500]", &l_globalTrackNumberOfValidHits[500], "l_globalTrackNumberOfValidHits[nl]/F");
+  tree_->Branch("isPromptFinalState", isPromptFinalState, "isPromptFinalState[nl]/B");
+  tree_->Branch("isDirectPromptTauDecayProductFinalState", isDirectPromptTauDecayProductFinalState, "isDirectPromptTauDecayProductFinalState[nl]/B");
+  tree_->Branch("l_id", l_id, "l_id[nl]/I");
+  tree_->Branch("l_g", l_g, "l_g[nl]/F");
+  tree_->Branch("l_charge", l_charge, "l_charge[nl]/F");
+  tree_->Branch("l_pt", l_pt, "l_pt[nl]/F");
+  tree_->Branch("l_eta", l_eta, "l_eta[nl]/F");
+  tree_->Branch("l_phi", l_phi, "l_phi[nl]/F");
+  tree_->Branch("l_mass", l_mass, "l_mass[nl]/F");
+  tree_->Branch("l_g_pt", l_g_pt, "l_g_pt[nl]/F");
+  tree_->Branch("l_g_eta", l_g_eta, "l_g_eta[nl]/F");
+  tree_->Branch("l_g_phi", l_g_phi, "l_g_phi[nl]/F");
+  tree_->Branch("l_g_mass", l_g_mass, "l_g_mass[nl]/F");
+  tree_->Branch("l_g_id", l_g_id, "l_g_id[nl]/F");
+  tree_->Branch("l_pid", l_pid, "l_pid[nl]/I");
+  tree_->Branch("l_chargedHadronIso", l_chargedHadronIso, "l_chargedHadronIso[nl]/F");
+  tree_->Branch("l_relIso", l_relIso, "l_relIso[nl]/F");
+  tree_->Branch("l_ip3d", l_ip3d, "l_ip3d[nl]/F");
+  tree_->Branch("l_ip3dsig", l_ip3dsig, "l_ip3dsig[nl]/F");
+  tree_->Branch("l_dxy", l_dxy, "l_dxy[nl]/F");
+  tree_->Branch("l_dxyE", l_dxyE, "l_dxyE[nl]/F");
+  tree_->Branch("l_dz", l_dz, "l_dz[nl]/F");
+  tree_->Branch("l_dzE", l_dzE, "l_dzE[nl]/F");
+  tree_->Branch("l_global", l_global, "l_global[nl]/B");
+  tree_->Branch("l_pf", l_pf, "l_pf[nl]/F");
+  tree_->Branch("l_nValTrackerHits", l_nValTrackerHits, "l_nValTrackerHits[nl]/F");
+  tree_->Branch("l_nValPixelHits", l_nValPixelHits, "l_nValPixelHits[nl]/F");
+  tree_->Branch("l_nMatchedStations", l_nMatchedStations, "l_nMatchedStations[nl]/F");
+  tree_->Branch("l_pixelLayerWithMeasurement", l_pixelLayerWithMeasurement, "l_pixelLayerWithMeasurement[nl]/F");
+  tree_->Branch("l_trackerLayersWithMeasurement", l_trackerLayersWithMeasurement, "l_trackerLayersWithMeasurement[nl]/F");
+  tree_->Branch("l_validFraction", l_validFraction, "l_validFraction[nl]/F");
+  tree_->Branch("l_chi2LocalPosition", l_chi2LocalPosition, "l_chi2LocalPosition[nl]/F");
+  tree_->Branch("l_trkKink", l_trkKink, "l_trkKink[nl]/F");
+  tree_->Branch("l_chi2norm", l_chi2norm, "l_chi2norm[nl]/F");
+  tree_->Branch("l_globalTrackNumberOfValidHits", l_globalTrackNumberOfValidHits, "l_globalTrackNumberOfValidHits[nl]/F");
 
   tree_->Branch("nj", &nj, "nj/I");
   tree_->Branch("ng", &ng, "ng/I");
@@ -290,10 +289,6 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
   tree_->Branch("g_id", g_id, "g_id[ng]/I");
 
   //Fragmentation stuff
-  tree_->Branch("d0_mass",&d0_mass);
-  tree_->Branch("d0_pt",&d0_pt);
-  tree_->Branch("jpsi_mass",&jpsi_mass);
-  tree_->Branch("jpsi_pt",&jpsi_pt);
   tree_->Branch("nmeson", &nmeson, "nmeson/I");
   tree_->Branch("meson_j",&meson_j, "meson_j[nmeson]/I");
   tree_->Branch("d0_mass", &d0_mass, "d0_mass[nmeson]/F");
@@ -360,7 +355,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   const reco::Vertex &primVtx = vertices->front();
   reco::VertexRef primVtxRef(vertices,0);
   nvtx = vertices->size();
-  if(n_vtx.size()==0) return;
+  if(nvtx==0) return;
 
   //TRIGGER INFORMATION
   edm::Handle<edm::TriggerResults> h_trigRes;
@@ -583,7 +578,6 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   for(auto jet = jets->begin();  jet != jets->end(); ++jet) {
     //saveJetConstituentPt(jet, recoJetConstituentPt, genJetConstituentPt, genJets);
 
-    // Loop over the jet constituents
     j_g[nj] = -1;
     float minDeltaR = 999.;
     float min_jet_dR = 0.01;
@@ -617,6 +611,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //good = false;
     std::vector<const reco::Candidate*> pions;
     std::vector<const reco::Candidate*> muons;
+    // Loop over the jet constituents
     for(unsigned int i = 0; i < jet->numberOfDaughters(); ++i) {
       const reco::Candidate* constituent = jet->daughter(i);
       if(constituent->pt() < 1) continue; // Only save pT >= 1 GeV
@@ -666,6 +661,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       for(size_t ipi = 0; ipi < pions.size(); ipi++) {
         for(size_t ik = 0; ik < pions.size(); ik++) { // Check all pairs for mass hypothesis (pi,K) and (K,pi)
           if(ipi == ik) continue;
+          if(pions[ipi]->pdgId() * pions[ik]->pdgId() > 0) continue; //opposite sign only
           TLorentzVector pi;
           TLorentzVector k;
           pi.SetPtEtaPhiM(pions[ipi]->p4().Pt(), pions[ipi]->p4().eta(), pions[ipi]->p4().phi(), gMassPi);
@@ -687,6 +683,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       for(size_t imu1 = 0; imu1 < muons.size(); imu1++) {
         for(size_t imu2 = 0; imu2 < muons.size(); imu2++) { // Check all pairs for mass hypothesis (mu1,mu2) and (mu2,mu1)
           if(imu1 == imu2) continue;
+          if(muons[imu1]->pdgId() * muons[imu2]->pdgId() > 0) continue; //opposite sign only
           TLorentzVector mu1;
           TLorentzVector mu2;
           mu1.SetPtEtaPhiM(muons[imu1]->p4().Pt(), muons[imu1]->p4().eta(), muons[imu1]->p4().phi(), gMassMu);
