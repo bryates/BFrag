@@ -191,5 +191,6 @@ if options.runOnData:
     process.p = cms.Path(process.preYieldFilter*process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.analysis)
 else:
     #process.p = cms.Path(process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.pseudoTop*process.analysis)
-    process.p = cms.Path(process.preYieldFilter*process.egmGsfElectronIDSequence*process.mergedGenParticles*process.genParticles2HepMC*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.egmGsfElectronIDSequence*process.mergedGenParticles*process.genParticles2HepMC*process.pseudoTop*process.analysis)
+    #process.p = cms.Path(process.preYieldFilter*process.egmGsfElectronIDSequence*process.mergedGenParticles*process.genParticles2HepMC*process.pseudoTop*process.analysis)
     #process.p = cms.Path(process.weightCounter*process.preYieldFilter*process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.mergedGenParticles*process.genParticles2HepMC*process.pseudoTop*process.bfragWgtProducer*process.analysis)

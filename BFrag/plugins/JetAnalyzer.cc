@@ -50,6 +50,8 @@
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+
 #include "TTree.h"
 #include "TLorentzVector.h"
 
@@ -90,6 +92,9 @@ class JetAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
       std::vector<std::string> muTriggersToUse_, elTriggersToUse_;
 
+      edm::EDGetTokenT<GenEventInfoProduct> generatorToken_;
+
+      std::unordered_map<std::string,TH1F*> histContainer_;
       TTree *tree_;
       edm::Service<TFileService> fs;
 
@@ -185,6 +190,10 @@ class JetAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   Float_t jpsi_pt[500];
   Float_t xb[500];
 
+  //Event weights
+  Int_t ttbar_nw;
+  Float_t ttbar_w[500];
+
 };
 
 //
@@ -207,7 +216,8 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
   eleTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleTightIdMap"))),
   jetToken_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jets"))),  
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
-  triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits")))
+  triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
+  generatorToken_(consumes<GenEventInfoProduct>(edm::InputTag("generator")))
 {
    electronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
    elTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("elTriggersToUse");
@@ -296,6 +306,11 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
   tree_->Branch("jpsi_mass", &jpsi_mass, "jpsi_mass[nmeson]/F");
   tree_->Branch("jpsi_pt", &jpsi_pt, "jpsi_pt[nmeson]/F");
   tree_->Branch("xb", xb, "xb[nmeson]/F");
+
+  //Event weights
+  histContainer_["counter"] = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
+  tree_->Branch("ttbar_nw", &ttbar_nw, "ttbar_nw/I");
+  tree_->Branch("ttbar_w", &ttbar_w, "ttbar_w[ttbar_nw]/F");
 }
 
 
@@ -347,6 +362,22 @@ void saveJetConstituentPt(const pat::Jet* jet, std::vector<double>& recoJetConst
 void
 JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+
+  histContainer_["counter"]->Fill(0);
+  //Event weights
+  ttbar_nw=0;
+  edm::Handle<GenEventInfoProduct> evt;
+  iEvent.getByToken( generatorToken_,evt);
+  if(evt.isValid()) {
+      /*
+      ttbar_allmepartons   = evt->nMEPartons();
+      ttbar_matchmepartons = evt->nMEPartonsFiltered();
+      */
+      ttbar_w[0]           = evt->weight();
+      ttbar_nw++;
+  }
+  histContainer_["counter"]->Fill(1,ttbar_w[0]);
+
   const bool isData  = iEvent.isRealData();
   //VERTICES
   edm::Handle<reco::VertexCollection> vertices;
@@ -702,6 +733,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     nj++;
   }
   if(nj==0) return;
+
   tree_->Fill();
 
 
