@@ -51,6 +51,7 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 
 #include "TTree.h"
 #include "TLorentzVector.h"
@@ -93,6 +94,7 @@ class JetAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       std::vector<std::string> muTriggersToUse_, elTriggersToUse_;
 
       edm::EDGetTokenT<GenEventInfoProduct> generatorToken_;
+  edm::EDGetTokenT<LHEEventProduct> generatorlheToken_;
 
       std::unordered_map<std::string,TH1F*> histContainer_;
       TTree *tree_;
@@ -217,7 +219,8 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
   jetToken_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jets"))),  
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
-  generatorToken_(consumes<GenEventInfoProduct>(edm::InputTag("generator")))
+  generatorToken_(consumes<GenEventInfoProduct>(edm::InputTag("generator"))),
+  generatorlheToken_(consumes<LHEEventProduct>(edm::InputTag("externalLHEProducer","")))
 {
    electronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
    elTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("elTriggersToUse");
@@ -300,17 +303,17 @@ JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig) :
 
   //Fragmentation stuff
   tree_->Branch("nmeson", &nmeson, "nmeson/I");
-  tree_->Branch("meson_j",&meson_j, "meson_j[nmeson]/I");
-  tree_->Branch("d0_mass", &d0_mass, "d0_mass[nmeson]/F");
-  tree_->Branch("d0_pt", &d0_pt, "d0_pt[nmeson]/F");
-  tree_->Branch("jpsi_mass", &jpsi_mass, "jpsi_mass[nmeson]/F");
-  tree_->Branch("jpsi_pt", &jpsi_pt, "jpsi_pt[nmeson]/F");
+  tree_->Branch("meson_j",meson_j, "meson_j[nmeson]/I");
+  tree_->Branch("d0_mass", d0_mass, "d0_mass[nmeson]/F");
+  tree_->Branch("d0_pt", d0_pt, "d0_pt[nmeson]/F");
+  tree_->Branch("jpsi_mass", jpsi_mass, "jpsi_mass[nmeson]/F");
+  tree_->Branch("jpsi_pt", jpsi_pt, "jpsi_pt[nmeson]/F");
   tree_->Branch("xb", xb, "xb[nmeson]/F");
 
   //Event weights
   histContainer_["counter"] = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
   tree_->Branch("ttbar_nw", &ttbar_nw, "ttbar_nw/I");
-  tree_->Branch("ttbar_w", &ttbar_w, "ttbar_w[ttbar_nw]/F");
+  tree_->Branch("ttbar_w", ttbar_w, "ttbar_w[ttbar_nw]/F");
 }
 
 
@@ -377,6 +380,20 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       ttbar_nw++;
   }
   histContainer_["counter"]->Fill(1,ttbar_w[0]);
+
+  //alternative weights for systematics
+  /*
+  edm::Handle<LHEEventProduct> evet;
+  iEvent.getByToken(generatorlheToken_, evet);
+  if(evet.isValid()) {
+      double asdd=evet->originalXWGTUP();
+      for(unsigned int i=0  ; i<evet->weights().size();i++) {
+        double asdde=evet->weights()[i].wgt;
+        ttbar_w[ttbar_nw]=ttbar_w[0]*asdde/asdd;
+        ttbar_nw++;
+      }
+  }
+  */
 
   const bool isData  = iEvent.isRealData();
   //VERTICES
