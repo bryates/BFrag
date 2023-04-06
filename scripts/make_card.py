@@ -7,6 +7,7 @@ param = { 655: 'sdown', 700: '700', 725: '725', 755: 'down', 775: 'dddown', 825:
 
 channels = ['d0', 'd0_mu_tag_mu', 'jpsi']
 channels = ['d0']
+processes = ['ttbar']
 chan_fits = []
 chan_data = []
 masks = []
@@ -59,7 +60,7 @@ with open('rb_card.txt', 'w') as card:
     bins = np.array([ch.shape[0]-1 for ch in chan_fits])
     nbins = np.sum(bins)
     card.write('imax {} number of bins\n'.format(nbins))
-    card.write('jmax {} number of processes minus 1\n'.format(len(channels)-1))
+    card.write('jmax {} number of processes minus 1\n'.format(len(processes)-1))
     card.write('kmax {} number of nuisance paramters\n'.format(nsysts))
     card.write(space)
     for ibin in range(nbins):
@@ -84,7 +85,7 @@ with open('rb_card.txt', 'w') as card:
     card.write('process\t\t\t\t')
     for iproc,fit in enumerate(chan_fits):
         for ibin in range(bins[iproc]):
-            card.write('{}\t\t\t\t\t'.format(channels[iproc]))
+            card.write('{}\t\t\t\t\t'.format(processes[0]))#channels[iproc]))
     card.write('\n')
     card.write('process\t\t\t\t')
     for iproc,fit in enumerate(chan_fits):
@@ -126,6 +127,7 @@ for ichan,channel in enumerate(channels):
             bin_vals = np.vstack((bin_vals,tmp_vals))
     
     for ibin in range(bin_vals.shape[1]):
-        rb_out['bin{}_{}'.format(ibin+1,channel)] = np.polyfit(rb_vals, bin_vals[:,ibin], 1)
+        offset = ichan * bins[ichan] + 1
+        rb_out['bin{}_{}'.format(ibin+offset,processes[0])] = np.polyfit(rb_vals, bin_vals[:,ibin], 1)
 
 np.save('rb_param', rb_out)

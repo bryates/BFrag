@@ -36,7 +36,7 @@ class rbModel(PhysicsModel):
         self.setup()
     
     def getYieldScale(self, bin, process):
-        if 'd0' not in process and 'jpsi' not in process:
+        if 'ttbar' not in process:
             return 1
         else:
             name = 'r_{}_{}'.format(bin,process)
