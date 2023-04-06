@@ -49,3 +49,22 @@ root [1] ((TTree*)gDirectory->Get("data"))->Scan("j_pt:l_pt:l_id:l_pid:l_g_pt:l_
 ***********************************************************************************************************
 (long long) 20
 ```
+
+
+### Install combine
+```
+cd $CMSSW_BASE/src
+cmsenv
+git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
+cd HiggsAnalysis/CombinedLimit
+git fetch origin
+git checkout v8.2.0
+cd -
+scram b -j8
+```
+
+### Running comibne
+```
+sh scripts/run_combine.sh
+```
+will make the datacard, the workspace, and run combine with the MultiDimFit option
