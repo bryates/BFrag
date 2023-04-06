@@ -138,5 +138,4 @@ for ichan,channel in enumerate(channels):
         offset = 0 if ichan==0 else np.sum(bins[:ichan])
         rb_out['bin{}_{}'.format(ibin+offset+1,processes[0])] = np.polyfit(rb_vals, bin_vals[:,ibin], 1)
 
-print(rb_out)
 np.save('rb_param', rb_out)
