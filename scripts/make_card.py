@@ -7,43 +7,45 @@ param = { 655: 'sdown', 700: '700', 725: '725', 755: 'down', 775: 'dddown', 825:
 
 channels = ['d0', 'd0_mu_tag_mu', 'jpsi']
 channels = ['d0']
+channels = ['d0', 'jpsi']
 processes = ['ttbar']
 chan_fits = []
 chan_data = []
 masks = []
 mask_edge = 0.56
+data_norms = []
 
 for channel in channels:
+    hack = 1 if channel == 'd0' else 0 # D0 data has one more bin
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_{channel}1_xb.root'
     frac = 'ptfrac_signal_hist'
     if 'mu_tag' in fname:
         fname = fname.replace('_xb', '_inc')
     with uproot.open(fname) as fin:
-        frag_hist_BF = fin[frac].to_numpy()[0][1:]
-        edges = fin[frac].to_numpy()[1][1:]
+        frag_hist_BF = fin[frac].to_numpy()[0][hack:]
+        edges = fin[frac].to_numpy()[1]
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_{channel}2_xb.root'
     if 'mu_tag' in fname:
         fname = fname.replace('_xb', '_inc')
     with uproot.open(fname) as fin:
-        frag_hist_GH = fin[frac].to_numpy()[0][1:]
+        frag_hist_GH = fin[frac].to_numpy()[0][hack:]
     
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_Data_Bfrag_genreco_sPlot_{channel}1_xb.root'
     if 'mu_tag' in fname:
         fname = fname.replace('_xb', '_inc')
     with uproot.open(fname) as fin:
-        data_hist_BF = fin[frac].to_numpy()[0][1:]
+        data_hist_BF = fin[frac].to_numpy()[0][hack:]
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_Data_Bfrag_genreco_sPlot_{channel}2_xb.root'
     if 'mu_tag' in fname:
         fname = fname.replace('_xb', '_inc')
     with uproot.open(fname) as fin:
-        data_hist_GH = fin[frac].to_numpy()[0][1:]
+        data_hist_GH = fin[frac].to_numpy()[0][hack:]
 
-    mask = edges[:-1] > mask_edge
+    mask = edges[hack:-1] > mask_edge
     masks.append(mask)
     edges = edges[edges>mask_edge]
     
-    mc_norm = np.sum(frag_hist_BF + frag_hist_GH)
-    data_norm = np.sum(data_hist_BF + data_hist_GH)
+    data_norms.append(np.sum(data_hist_BF + data_hist_GH))
     
     frag_hist_BF = frag_hist_BF[mask]
     frag_hist_GH = frag_hist_GH[mask]
@@ -105,20 +107,25 @@ rb_out = {}
 for ichan,channel in enumerate(channels):
     rb_vals = []
     for rb in param:
-        fname = '/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_{}_sPlot_d01_xb.root'.format(param[rb])
-        if not os.path.exists(fname):
-            continue
+        hack = 1 if channel == 'd0' and rb == 855 else 0 # D0 0.855 has one more bin
+        fname = '/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_{}_sPlot_{}1_xb.root'.format(param[rb], channel)
         if rb == 855:
-            fname = '/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_d01_xb.root'
-        rb_vals.append(rb/1000.)
+            fname = '/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_{}1_xb.root'.format(channel)
+        if not os.path.exists(fname):
+            print(f'{fname} not found!')
+            continue
         with uproot.open(fname) as fin:
-            tmp_vals = fin['ptfrac_signal_hist'].values()
+            if 'ptfrac_signal_hist' not in fin:
+                print(f'Skipping {fname}!')
+                continue
+            tmp_vals = fin['ptfrac_signal_hist'].values()[hack:]
+        rb_vals.append(rb/1000.)
         size = len(tmp_vals)
         fname = fname.replace('1_xb', '2_xb')
         with uproot.open(fname) as fin:
-            tmp_vals += fin['ptfrac_signal_hist'].values()
+            tmp_vals += fin['ptfrac_signal_hist'].values()[hack:]
         tmp_vals /= np.sum(tmp_vals) # Normalize to parameterize shape only
-        tmp_vals *= data_norm
+        tmp_vals *= data_norms[ichan]
         tmp_vals = tmp_vals[masks[ichan]]
         #tmp_vals /= widths[:-1] # Divide by bin widths
         if rb == list(param.keys())[0]:
