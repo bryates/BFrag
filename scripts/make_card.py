@@ -6,8 +6,7 @@ param = { 655: 'sdown', 700: '700', 725: '725', 755: 'down', 775: 'dddown', 825:
 #param = { 655: 'sdown', 700: '700', 725: '725', 755: 'down', 775: 'dddown', 800: 'ddown', 825: 'scentral', 855: '', 875: 'cccentral', 9: 'ccentral', 925: '925', 955: 'central', 975: 'uuup', 1.000: 'uup', 1.055: 'up'}
 
 channels = ['d0', 'd0_mu_tag_mu', 'jpsi']
-channels = ['d0']
-channels = ['d0', 'jpsi']
+#channels = ['d0']
 processes = ['ttbar']
 chan_fits = []
 chan_data = []
@@ -20,24 +19,24 @@ for channel in channels:
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_{channel}1_xb.root'
     frac = 'ptfrac_signal_hist'
     if 'mu_tag' in fname:
-        fname = fname.replace('_xb', '_inc')
+        fname = fname.replace('_xb', '')
     with uproot.open(fname) as fin:
         frag_hist_BF = fin[frac].to_numpy()[0][hack:]
         edges = fin[frac].to_numpy()[1]
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_{channel}2_xb.root'
     if 'mu_tag' in fname:
-        fname = fname.replace('_xb', '_inc')
+        fname = fname.replace('_xb', '')
     with uproot.open(fname) as fin:
         frag_hist_GH = fin[frac].to_numpy()[0][hack:]
     
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_Data_Bfrag_genreco_sPlot_{channel}1_xb.root'
     if 'mu_tag' in fname:
-        fname = fname.replace('_xb', '_inc')
+        fname = fname.replace('_xb', '')
     with uproot.open(fname) as fin:
         data_hist_BF = fin[frac].to_numpy()[0][hack:]
     fname = f'/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_Data_Bfrag_genreco_sPlot_{channel}2_xb.root'
     if 'mu_tag' in fname:
-        fname = fname.replace('_xb', '_inc')
+        fname = fname.replace('_xb', '')
     with uproot.open(fname) as fin:
         data_hist_GH = fin[frac].to_numpy()[0][hack:]
 
@@ -80,7 +79,7 @@ with open('rb_card.txt', 'w') as card:
     card.write(space)
     card.write('bin\t\t\t\t\t')
     for iproc,fit in enumerate(chan_fits):
-        offset = iproc * bins[iproc]
+        offset = 0 if iproc==0 else np.sum(bins[:iproc])
         for ibin in range(bins[iproc]):
             card.write('bin{}\t\t\t\t\t'.format(ibin+offset+1))
     card.write('\n')
@@ -111,6 +110,8 @@ for ichan,channel in enumerate(channels):
         fname = '/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_{}_sPlot_{}1_xb.root'.format(param[rb], channel)
         if rb == 855:
             fname = '/afs/cern.ch/user/b/byates/TopAnalysis/LJets2015/2016/mtop/sPlot/sPlot/TopMass_172v5_Bfrag_genreco_sPlot_{}1_xb.root'.format(channel)
+        if 'mu_tag' in fname:
+            fname = fname.replace('_xb', '')
         if not os.path.exists(fname):
             print(f'{fname} not found!')
             continue
@@ -134,7 +135,8 @@ for ichan,channel in enumerate(channels):
             bin_vals = np.vstack((bin_vals,tmp_vals))
     
     for ibin in range(bin_vals.shape[1]):
-        offset = ichan * bins[ichan] + 1
-        rb_out['bin{}_{}'.format(ibin+offset,processes[0])] = np.polyfit(rb_vals, bin_vals[:,ibin], 1)
+        offset = 0 if ichan==0 else np.sum(bins[:ichan])
+        rb_out['bin{}_{}'.format(ibin+offset+1,processes[0])] = np.polyfit(rb_vals, bin_vals[:,ibin], 1)
 
+print(rb_out)
 np.save('rb_param', rb_out)
