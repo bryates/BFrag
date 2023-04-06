@@ -111,8 +111,6 @@ for rb in param:
         bin_vals = tmp_vals
     else:
         bin_vals = np.vstack((bin_vals,tmp_vals))
-    with uproot.recreate(f'test_{rb}.root') as fout:
-        fout['hist'] = (tmp_vals, edges)
 
 rb_out = {}
 for ibin in range(1, bin_vals.shape[1]):

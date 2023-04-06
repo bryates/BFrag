@@ -31,7 +31,7 @@ class rbModel(PhysicsModel):
             self.modelBuilder.out._import(func)
     
     def doParametersOfInterest(self):
-        self.modelBuilder.doVar('rb[0.855]')# 0.6, 1.0]')
+        self.modelBuilder.doVar('rb[0.855, 0.6, 1.0]')
         self.modelBuilder.doSet('POI', 'rb')
         self.setup()
     
