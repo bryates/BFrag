@@ -89,7 +89,7 @@ BToD = cms.EDProducer(
     jetsSelection = cms.string('pt > 30 && abs(eta) < 2.5'),
     # This in principle can be different between electrons and muons
     postVtxSelection = cms.string(
-         'userInt("sv_OK") == 1 && userFloat("fitted_mass") > 1.7 && userFloat("fitted_mass") < 2.0'
+         'userInt("sv_OK") == 1 && ((userFloat("fitted_mass") > 1.7 && userFloat("fitted_mass") < 2.0) || (userFloat("fitted_mass") > 2.5 && userFloat("fitted_mass") < 3.5))'
     )
 )
 
@@ -97,7 +97,7 @@ BToDTable = cms.EDProducer(
     'SimpleCompositeCandidateFlatTableProducer',
     src = cms.InputTag("BToD"),
     cut = cms.string(""),
-    name = cms.string("BToD"),
+    name = cms.string("BToCharm"),
     doc = cms.string("BToD Variable"),
     singleton=cms.bool(False),
     extension=cms.bool(False),
@@ -135,6 +135,12 @@ BToDTable = cms.EDProducer(
         fit_k_pt = ufloat('fitted_k_pt'),
         fit_k_eta = ufloat('fitted_k_eta'),
         fit_k_phi = ufloat('fitted_k_phi'),
+        x_pt = ufloat('x_pt'),
+        x_eta = ufloat('x_eta'),
+        x_phi = ufloat('x_phi'),
+        xIdx = uint('x_idx'),
+        x_id = uint('x_id'),
+        meson_id = uint('meson_id'),
         n_pi_used = uint('n_pi_used'),
         n_k_used = uint('n_k_used'),
     )

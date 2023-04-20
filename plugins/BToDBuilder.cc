@@ -57,7 +57,7 @@ private:
   const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
 
   const edm::EDGetTokenT<pat::JetCollection> jetsToken_;
-  const StringCutObjectSelector<pat::PackedCandidate> jets_selection_; 
+  const StringCutObjectSelector<pat::Jet> jets_selection_; 
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
   const edm::EDGetTokenT<reco::VertexCollection> vertex_src_;
@@ -89,38 +89,44 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   edm::Handle<pat::JetCollection> jets;
   evt.getByToken(jetsToken_, jets);
 
-  std::vector<size_t> used_pi_id, used_k_id;
+  std::vector<size_t> used_pi_id, used_k_id, used_x_id;
 
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   size_t ijet = 0;
+  //bool extraFound = false;
   for(auto jet = jets->begin();  jet != jets->end(); ++jet) {
-    unsigned int ndau = jet->numberOfDaughters();
+    if( !jets_selection_(*jet) ) continue;
+    size_t ndau = jet->numberOfDaughters();
+    //ndau = ndau > 4 ? 4 : ndau; // Fit sometimes crashes at large candidates, low pT not modeled well anyway
 
     for(size_t iTrk=0; iTrk < ndau; ++iTrk) {
-    //for( size_t iTrk=0; iTrk<nTracks; ++iTrk ) {
-        //if(iTrk > 100) continue;
 
       const pat::PackedCandidate &trk1 = dynamic_cast<const pat::PackedCandidate &>(*jet->daughter(iTrk));
       //const pat::PackedCandidate & trk1 = (*iso_tracks)[iTrk];
-      if(abs(trk1.pdgId()) != 211) continue; // Charged hadrons
+      //if(abs(trk1.pdgId()) != 211) continue; // Charged hadrons
+      if(abs(trk1.pdgId()) != 211 && abs(trk1.pdgId()) != 13) continue; // Charged hadrons or muons
 
       for(size_t jTrk=0; jTrk < ndau; ++jTrk) {
-      //for( size_t jTrk=0; jTrk<nTracks; ++jTrk ) {
-        //if(jTrk > 100) continue;
         
         const pat::PackedCandidate &trk2 = dynamic_cast<const pat::PackedCandidate &>(*jet->daughter(jTrk));
         //const pat::PackedCandidate & trk2 = (*iso_tracks)[jTrk];
         if(iTrk == jTrk) continue; // Need to check all (i,j) and (j,i), skip (i,i)
-        if(abs(trk2.pdgId()) != 211) continue; // Charged hadrons
+        //if(abs(trk2.pdgId()) != 211) continue; // Charged hadrons
+        if(abs(trk2.pdgId()) != 211 && abs(trk2.pdgId()) != 13) continue; // Charged hadrons or muons
+        if(trk1.pdgId()*trk2.pdgId() != -211*211 && trk1.pdgId()*trk2.pdgId() != -13*13) continue; // pi(K) K(pi) or mu mu
         if(trk1.charge() * trk2.charge() > 0) continue; // Opposite-signed pairs
+        const float mass1 = abs(trk1.pdgId()) == 13 ? MUON_MASS : PI_MASS;
+        const float mass2 = abs(trk2.pdgId()) == 13 ? MUON_MASS : K_MASS;
+        const float sigma1 = abs(trk1.pdgId()) == 13 ? LEP_SIGMA : K_SIGMA; // K and pi have same sigma in helper.h
+        const int meson_id = abs(trk1.pdgId()) == 13 ? 443 : 411;
 
         math::PtEtaPhiMLorentzVector k_p4( // k mass hypothesis for jTrk
           trk2.pt(), 
           trk2.eta(),
           trk2.phi(),
-          K_MASS
+          mass2
         );
 
         pat::CompositeCandidate cand;
@@ -129,24 +135,43 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         cand.setP4(trk1.p4() + k_p4);
         cand.setCharge(trk1.charge() + trk2.charge());
         // define selections for iso tracks (pT, eta, ...)
-        if( !jets_selection_(trk1) ) continue;
-        if( !jets_selection_(trk2) ) continue;
-        //if( !isotrk_selection_(trk1) ) continue;
-        //if( !isotrk_selection_(trk2) ) continue;
+        //if( !jets_selection_(trk1) ) continue;
+        //if( !jets_selection_(trk2) ) continue;
+        if( !isotrk_selection_(trk1) ) continue;
+        if( !isotrk_selection_(trk2) ) continue;
         if(!trk1.trackHighPurity()) continue;
         if(!trk2.trackHighPurity()) continue;
-        //if(cand.mass() < 1.7 || cand.mass() > 2.0) continue; // Loose D0 window
+        /*
+        */
+        if(abs(trk1.pdgId()) == 13) { // J/Psi -> mu mu
+          if(cand.mass() < 2.5 || cand.mass() > 3.5) continue; // Loose J/Psi window
+        }
+        else if(abs(trk1.pdgId()) == 211) { // D0 -> pi K
+          if(cand.mass() < 1.7 || cand.mass() > 2.0) continue; // Loose D0 window
+        }
         
+        if(trk1.bestTrack() == nullptr || trk2.bestTrack() == nullptr) continue; // No transient track
         auto pi_ttrack = reco::TransientTrack( (*trk1.bestTrack()) , &(*fieldHandle));
         auto k_ttrack = reco::TransientTrack( (*trk2.bestTrack()) , &(*fieldHandle));
-        if(trk1.bestTrack() == nullptr || trk2.bestTrack() == nullptr) continue; // No transient track
 
-        KinVtxFitter fitter(
-          {pi_ttrack, k_ttrack},
-          {PI_MASS, K_MASS},
-          {PI_SIGMA, K_SIGMA} //some small sigma for the lepton mass
-        );
+        KinVtxFitter fitter;
+        try {
+          fitter = KinVtxFitter(
+            {pi_ttrack, k_ttrack},
+            {mass1, mass2},
+            {sigma1, sigma1} //some small sigma for the lepton mass
+          );
+        }
+        catch (...) {
+          std::cout << "Problem computing vertex" << std::endl;
+          continue;
+        }
+        try {
         if(!fitter.success()) continue; // hardcoded, but do we need otherwise?
+        }
+        catch (...) {
+           continue;
+        }
         cand.setVertex( 
           reco::Candidate::Point( 
             fitter.fitted_vtx().x(),
@@ -157,6 +182,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         used_pi_id.emplace_back(iTrk);
         used_k_id.emplace_back(jTrk);
         cand.addUserInt("jid" , ijet);
+        cand.addUserInt("meson_id" , meson_id);
         cand.addUserInt("sv_OK" , fitter.success());
         cand.addUserFloat("sv_chi2", fitter.chi2());
         cand.addUserFloat("sv_ndof", fitter.dof()); // float??
@@ -209,16 +235,69 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         cand.addUserFloat("fitted_k_phi", fitter.daughter_p4(1).phi());
       
         // kaon 3D impact parameter from dilepton SV
-        /* Play with this for D* -> D0 + pi
-        TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(k_idx).impactPointState(), dileptons_kinVtxs->at(ll_idx).fitted_vtx());
-        std::pair<bool,Measurement1D> cur2DIP = signedTransverseImpactParameter(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), *beamspot);
-        std::pair<bool,Measurement1D> cur3DIP = signedImpactParameter3D(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), *beamspot, (*pvtxs)[0].position().z());
-
-        cand.addUserFloat("k_svip2d" , cur2DIP.second.value());
-        cand.addUserFloat("k_svip2d_err" , cur2DIP.second.error());
-        cand.addUserFloat("k_svip3d" , cur3DIP.second.value());
-        cand.addUserFloat("k_svip3d_err" , cur3DIP.second.error());
+        /*
         */
+        bool extraFound = false;
+        for(size_t kTrk = 0; kTrk < ndau; ++kTrk) {
+          if(kTrk == iTrk) continue;
+          if(kTrk == jTrk) continue;
+          const pat::PackedCandidate &trk3 = dynamic_cast<const pat::PackedCandidate &>(*jet->daughter(kTrk));
+          if( !isotrk_selection_(trk3) ) continue;
+          if(trk3.bestTrack() == nullptr) continue; // No transient track
+          auto x_ttrack = reco::TransientTrack( (*trk3.bestTrack()) , &(*fieldHandle));
+          if(abs(trk3.pdgId()) != 211 && abs(trk3.pdgId()) != 13) continue; // Charged hadrons
+          const float mass3 = abs(trk3.pdgId()) == 13 ? MUON_MASS : K_MASS;
+          const float sigma3 = abs(trk3.pdgId()) == 13 ? LEP_SIGMA : K_SIGMA;
+          if(!trk3.trackHighPurity()) continue;
+          if(abs(trk3.pdgId()) == 13 && !trk3.isTrackerMuon() && !trk3.isGlobalMuon()) continue; // global muons only
+          //TrajectoryStateOnSurface tsos = extrapolator.extrapolate(x_ttrack.impactPointState(), fitter.fitted_vtx());
+          //std::pair<bool,Measurement1D> cur2DIP = signedTransverseImpactParameter(tsos, fitter.fitted_refvtx(), *beamspot);
+          //std::pair<bool,Measurement1D> cur3DIP = signedImpactParameter3D(tsos, fitter.fitted_refvtx(), *beamspot, (*pvtxs)[0].position().z());
+          cand.addUserFloat("x_pt" , trk3.pt()); 
+          cand.addUserFloat("x_eta", trk3.eta());
+          cand.addUserFloat("x_phi", trk3.phi());
+          cand.addUserInt("x_idx", kTrk);
+          cand.addUserInt("x_id", trk3.pdgId());
+          /*
+          KinVtxFitter fitter3(
+            {pi_ttrack, k_ttrack, x_ttrack},
+            {mass1, mass2, mass},
+            {sigma1, sigma1, sigma} //some small sigma for the lepton mass
+          );
+          if(!fitter3.success()) continue; // hardcoded, but do we need otherwise?
+          pat::CompositeCandidate cand3;
+          cand3.setVertex( 
+            reco::Candidate::Point( 
+              fitter3.fitted_vtx().x(),
+              fitter3.fitted_vtx().y(),
+              fitter3.fitted_vtx().z()
+            )  
+          );
+          used_x_id.emplace_back(kTrk);
+          cand.addUserInt("x_idx", kTrk);
+          cand.addUserInt("x_id", trk3.pdgId());
+          cand.addUserFloat("fitted_mass3", fitter3.fitted_candidate().mass());      
+          cand.addUserFloat("fitted_massErr3", sqrt(fitter3.fitted_candidate().kinematicParametersError().matrix()(6,6)));      
+          cand.addUserFloat("fitted_x_pt" , fitter3.daughter_p4(2).pt()); 
+          cand.addUserFloat("fitted_x_eta", fitter3.daughter_p4(2).eta());
+          cand.addUserFloat("fitted_x_phi", fitter3.daughter_p4(2).phi());
+          */
+          
+          extraFound = true;
+          //cand.addUserFloat("x_svip2d" , cur2DIP.second.value());
+          //cand.addUserFloat("x_svip2d_err" , cur2DIP.second.error());
+          //cand.addUserFloat("x_svip3d" , cur3DIP.second.value());
+          //cand.addUserFloat("x_svip3d_err" , cur3DIP.second.error());
+        } // kTrk
+        /*
+        */
+        if(!extraFound) {
+          cand.addUserFloat("x_pt" , -1); 
+          cand.addUserFloat("x_eta", -1);
+          cand.addUserFloat("x_phi", -1);
+          cand.addUserInt("x_id", 0);
+          cand.addUserInt("x_idx", -1);
+        } 
 
         if( !post_vtx_selection_(cand) ) continue;        
 
@@ -232,6 +311,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   for (auto & cand: *ret_val){
     cand.addUserInt("n_pi_used", std::count(used_pi_id.begin(),used_pi_id.end(),cand.userInt("pi_idx"))+std::count(used_k_id.begin(),used_k_id.end(),cand.userInt("pi_idx")));
     cand.addUserInt("n_k_used", std::count(used_pi_id.begin(),used_pi_id.end(),cand.userInt("k_idx"))+std::count(used_k_id.begin(),used_k_id.end(),cand.userInt("k_idx")));
+    //cand.addUserInt("n_x_used", std::count(used_pi_id.begin(),used_pi_id.end(),cand.userInt("x_idx"))+std::count(used_x_id.begin(),used_x_id.end(),cand.userInt("x_idx")));
   }
 
   evt.put(std::move(ret_val));
