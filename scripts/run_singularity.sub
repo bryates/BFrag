@@ -16,4 +16,4 @@ Log    = logs/$(Executable)_$(cluster)_$(process).condor
 
 arguments = $(ClusterID) $(ProcId)
 
-queue 670
+Queue 670
