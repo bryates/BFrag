@@ -109,6 +109,7 @@ BToDTable = cms.EDProducer(
         kIdx = uint('k_idx'),
         # fit and vtx info
         chi2 = ufloat('sv_chi2'),
+        ndof = ufloat('sv_ndof'),
         svprob = ufloat('sv_prob'),
         l_xy = ufloat('l_xy'),
         l_xy_unc = ufloat('l_xy_unc'),
