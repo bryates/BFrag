@@ -116,7 +116,6 @@ def plot_mass(meson='d0'):
             continue
         '''
         x.plot1d(label=f'{meson_tex[meson]} {ibin}')
-        #plt.step(mass_bins[:-1], h_d0, label=f'D0 {ibin}')
     plt.legend()
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/{meson_name}_mass.png')
@@ -124,8 +123,6 @@ def plot_mass(meson='d0'):
     h1 = output[f'{meson}_mass'][{'meson_id': hist.loc(pdgId)}]
     h1.plot1d(label=f'{meson_tex[meson]} mass')
     h2 = output[f'xb_mass_{meson}'][{'xb': sum, 'meson_id': hist.loc(pdgId)}]
-    h2.plot1d(label=f'{meson_tex[meson]} mass 1D')
-    #output[f'xb_mass_{meson}'][{'xb': sum}][{'meson_id': hist.loc(pdgId)}].plot1d(label=f'{meson_tex[meson]} mass 1D')
     plt.legend()
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/{meson_name}_mass_full.png')
@@ -133,16 +130,12 @@ def plot_mass(meson='d0'):
     
     
     output[f'xb_{meson}'].plot1d(label='$x_{\mathrm{b}}$')
-    #plt.step(x=xb_bins[:-1], y=output[f'xb_{mes}'], label='$x_{\mathrm{b}}$')
     plt.legend()
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/xb_{meson_name}_all.png')
     plt.close()
 
     output['jet_id'][{'meson_id': hist.loc(pdgId), 'dataset': sum}].plot1d()
-    #print(output[f'jet_id'][{'dataset', sum, 'meson_id', hist.loc(mass_id[meson])}])
-    #output[f'jet_id'][{'dataset', sum, 'meson_id', hist.loc(mass_id[meson])}].plot1d(label='$x_{\mathrm{b}}$')
-    #plt.step(x=jet_id_bins[:-1], y=output[f'xb_{mes}'], label='$x_{\mathrm{b}}$')
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/jet_id_{meson_name}_all.png')
     plt.close()
@@ -177,7 +170,6 @@ def plot_and_fit_mass(meson='d0'):
     h = output[f'xb_mass_{meson}']
     for ibin in range(0,xb_bins.shape[0]-1):
         x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId)}].values()[0]
-        #FIXME x = output[f'xb_{meson}'].values()[0]
         ne0 = np.sum(x)*2
         if ne0 < 21:
             xb_mass.append(0)
@@ -204,8 +196,6 @@ def plot_and_fit_mass(meson='d0'):
     plt.savefig(f'{path}/{meson_name}_mass_fit.png')
     plt.close()
     plt.step(x=bins, y=xb_mass, label='$x_{\mathrm{b}}$ signal')
-    #plt.step(x=xb_bins[:-1], y=xb_mass, label='$x_{\mathrm{b}}$ signal')
-    #plt.hist(xb_mass, label='$x_{\mathrm{b}}$ signal')
     plt.legend()
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/xb_{meson_name}_sig.png')
@@ -213,6 +203,6 @@ def plot_and_fit_mass(meson='d0'):
 
 
 plot_and_fit_mass('d0')
-plot_mass('d0') # Not enough statistics to fit D0mu mass peak?
-plot_mass('jpsi') # Not enough statistics to fit D0mu mass peak?
-plot_mass('d0_mu') # Not enough statistics to fit D0mu mass peak?
+plot_mass('d0')
+plot_mass('jpsi')
+plot_mass('d0_mu')
