@@ -768,7 +768,6 @@ class Processor(processor.ProcessorABC):
         nleps_axis = hist.axis.Regular(name='nleps', label='$N_{\mathrm{leps}}$', bins=10, start=0, stop=10)
         jpsi_mass_axis = hist.axis.Regular(name='jpsi_mass', label='J/Psi mass [GeV]', bins=30, start=self.jpsi_mass_bins[0], stop=self.jpsi_mass_bins[-1])
         d0_mass_axis = hist.axis.Regular(name='d0_mass', label='D0 mass [GeV]', bins=30, start=self.mass_bins[0], stop=self.mass_bins[-1])
-        mass_tag_axis = hist.axis.Regular(name='d0_mu_mass', label='D0 mu-tag mass [GeV]', bins=30, start=self.mass_bins[0], stop=self.mass_bins[-1])
         mass_axes = [hist.axis.Regular(name=f'd0_{int(xb_bin*10)}', label='D0 mass [GeV] (' + str(round(self.xb_bins[ibin], 2)) + ' < $x_{\mathrm{b}}$ < ' + str(round(self.xb_bins[ibin+1], 2)) + ')', bins=30, start=1.7, stop=2.0) for ibin,xb_bin in enumerate(self.xb_bins[:-1])]
         meson_axis = hist.axis.IntCategory(name="meson_id", label="Meson pdgId (411 D0, 41113 D0mu, 443 J/Psi, 443211 J/Psi+K)", categories=[411, 41113, 443])
         jet_axis = hist.axis.IntCategory(name="jet_id", label="Jet flavor", categories=list(range(1,7)))
@@ -795,30 +794,7 @@ class Processor(processor.ProcessorABC):
             'nleps' : hist.Hist(dataset_axis, nleps_axis),
             'jpsi_mass': hist.Hist(dataset_axis, meson_axis, jpsi_mass_axis),
             'd0_mass': hist.Hist(dataset_axis, meson_axis, d0_mass_axis),
-            'd0_mu_mass': hist.Hist(dataset_axis, mass_tag_axis),
             'ctau': hist.Hist(dataset_axis, ctau_axis, meson_axis),
-            # FIXME make these dynamically
-            'd0_0' : hist.Hist(dataset_axis, meson_axis, mass_axes[0]),
-            'd0_1' : hist.Hist(dataset_axis, meson_axis, mass_axes[1]),
-            'd0_2' : hist.Hist(dataset_axis, meson_axis, mass_axes[2]),
-            'd0_3' : hist.Hist(dataset_axis, meson_axis, mass_axes[3]),
-            'd0_4' : hist.Hist(dataset_axis, meson_axis, mass_axes[4]),
-            'd0_5' : hist.Hist(dataset_axis, meson_axis, mass_axes[5]),
-            'd0_6' : hist.Hist(dataset_axis, meson_axis, mass_axes[6]),
-            'd0_7' : hist.Hist(dataset_axis, meson_axis, mass_axes[7]),
-            'd0_8' : hist.Hist(dataset_axis, meson_axis, mass_axes[8]),
-            'd0_9' : hist.Hist(dataset_axis, meson_axis, mass_axes[9]),
-            'd0_mu_0' : hist.Hist(dataset_axis, mass_axes[0]),
-            'd0_mu_1' : hist.Hist(dataset_axis, mass_axes[1]),
-            'd0_mu_2' : hist.Hist(dataset_axis, mass_axes[2]),
-            'd0_mu_3' : hist.Hist(dataset_axis, mass_axes[3]),
-            'd0_mu_4' : hist.Hist(dataset_axis, mass_axes[4]),
-            'd0_mu_5' : hist.Hist(dataset_axis, mass_axes[5]),
-            'd0_mu_6' : hist.Hist(dataset_axis, mass_axes[6]),
-            'd0_mu_7' : hist.Hist(dataset_axis, mass_axes[7]),
-            'd0_mu_8' : hist.Hist(dataset_axis, mass_axes[8]),
-            'd0_mu_9' : hist.Hist(dataset_axis, mass_axes[9]),
-            #'d0_10' : hist.Hist(dataset_axis, mass_axes[10]),
             'vtx_mass_d0' : hist.Hist(dataset_axis, hist.axis.Regular(name='vtx', label='Vertex prob.', bins=100, start=0, stop=.1), d0_mass_axis),
             'chi_mass_d0' : hist.Hist(dataset_axis, hist.axis.Regular(name='chi', label='$\chi^2$ prob.', bins=100, start=0, stop=.1), d0_mass_axis),
             'vtx_mass_jpsi' : hist.Hist(dataset_axis, hist.axis.Regular(name='vtx', label='Vertex prob.', bins=100, start=0, stop=.1), jpsi_mass_axis),
@@ -885,7 +861,6 @@ class Processor(processor.ProcessorABC):
         d0_mu = charm_cand[d0_mu_mask]
         d0_mu = d0_mu[ak.argsort(d0_mu.pt, ascending=False)] # Sort in case we just want the hardest muon
         #xb_d0mu = ak.flatten((d0_mu.pt + d0_mu.x_pt)[events.is_ttbar] / jets.pt[d0_mu.jetIdx][events.is_ttbar])
-        d0_mu_mass = ak.fill_none(ak.flatten(d0_mu.fit_mass[events.is_ttbar]), -1)
 
         # Define xb
         xb = (charm_cand.fit_pt / jets[charm_cand.jetIdx].pt)
