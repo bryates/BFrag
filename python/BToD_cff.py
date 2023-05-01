@@ -119,6 +119,8 @@ BToDTable = cms.EDProducer(
         vtx_ex = ufloat('vtx_ex'), ## only saving diagonal elements of the cov matrix
         vtx_ey = ufloat('vtx_ey'),
         vtx_ez = ufloat('vtx_ez'),
+        vtx_l3d = ufloat('vtx_l3d'),
+        vtx_el3d = ufloat('vtx_el3d'),
         # Mll
         mll_fullfit = ufloat('fitted_mll'),
         # Cos(theta)
