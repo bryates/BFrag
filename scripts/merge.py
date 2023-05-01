@@ -7,6 +7,8 @@ import os
 from scipy.optimize import curve_fit
 from scipy.stats import chi2
 import uproot
+import mplhep as hep
+plt.style.use(hep.style.CMS)
 
 output = {}
 sumw = 0
@@ -30,14 +32,17 @@ for ifile in range(total):
     sumw2 += fin['sumw2']['ttbar']
     count += 1
 print(f'Loaded {count} / {total}')
+print(output['sumw'])
 
 # Scale processes by cross-section
+lumi = 35.9
 xsecs = {'ttbar': 830}
 for key in output:
     if 'sumw' in key:
         continue #sumw and sumw2 are dicts, not hists
     for iax,ax in enumerate(list(output[key].axes[0])):
-        output[key].view(flow=True)[iax] *= 135 * 1000 * xsecs[ax] / sumw
+        # Scale all processes by their lumi and the total xsec (testing wth 138 fbinv)
+        output[key].view(flow=True)[iax] *= lumi * 1000 * xsecs[ax] / sumw
 
 # Save the total histograms in a pkl file and a ROOT file for testing
 coffea.util.save(output, 'coffea.pkl')
@@ -47,8 +52,6 @@ with uproot.recreate('output.root') as fout:
             continue #sumw and sumw2 are dicts, not hists
         for s in output[key].axes['dataset']:
             fout[ f'histo/{key}_{s}'] = output[key][{'dataset': s}]
-            #h = output[key][{'dataset': s}]
-            #fout[f'histo/{key}_{s}'] = h * 135 * 1000 * xsecs[s] / sumw
 
 
 def d0_mass_fit(mass, mean, sigma, nsig, mean_kk, sigma_kk, nkk, mean_pp, sigma_pp, npp, l, nbkg):
@@ -66,6 +69,29 @@ mass_bins = np.linspace(1.7, 2.0, 31)
 xb_bins = np.linspace(0, 1, 11)
 
 meson_tex = {'d0': '$\mathrm{D^{0}}$', 'jpsi': '$\mathrm{J/\psi}$'}
+path = '/eos/user/b/byates/www/BFrag/'
+
+output['l0pt'].plot1d(label='l0pt')
+plt.legend()
+hep.cms.label(lumi=lumi)
+plt.savefig(f'{path}/l0pt_coffea.png')
+plt.close()
+output['nleps'].plot1d(label='nleps')
+plt.legend()
+hep.cms.label(lumi=lumi)
+plt.savefig(f'{path}/nleps_coffea.png')
+plt.close()
+output['njets'].plot1d(label='njets')
+plt.legend()
+hep.cms.label(lumi=lumi)
+plt.savefig(f'{path}/njets_coffea.png')
+plt.close()
+output['nbjets'].plot1d(label='nbjets')
+plt.legend()
+hep.cms.label(lumi=lumi)
+plt.savefig(f'{path}/nbjets_coffea.png')
+plt.close()
+mass_id = {'d0': 411, 'd0_mu': 41113, 'jpsi': 443}
 
 def plot_mass(meson='d0'):
     '''
@@ -73,17 +99,17 @@ def plot_mass(meson='d0'):
     '''
     print(f'Fitting {meson}')
     xb_mass = []
-    output[f'xb_mass_{meson}'] *=  135 * 1000 * 832. / sumw
-    h = output[f'xb_mass_{meson}'][{'dataset': sum}]
+    pdgId = mass_id[meson]
+    meson_name = meson
+    meson = meson.replace('_mu', '')
+    h = output[f'xb_mass_{meson}'][{'dataset': sum, 'meson_id': hist.loc(pdgId)}]
     h.plot2d()
-    plt.savefig(f'xb_mass_{meson}.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/xb_mass_{meson_name}.png')
     plt.close()
-    output[f'xb_mass_{meson}'] *=  135 * 1000 * 832. / sumw
-    h = output[f'xb_mass_{meson}']
-    xb_bins = h.axes[1].edges
+    h = output[f'xb_mass_{meson}'][{'dataset': sum, 'meson_id': hist.loc(pdgId)}]
+    xb_bins = h.axes[0].edges
     for ibin in range(0,xb_bins.shape[0]-1):
-        #output[f'd0_{ibin}'] *= 135 * 1000 * 832./sumw
-        #h_d0 = output[f'{meson}_{ibin}'].values()[0]
         x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum)}]
         '''
         if np.sum(x.values()[0]) < 1:
@@ -92,29 +118,49 @@ def plot_mass(meson='d0'):
         x.plot1d(label=f'{meson_tex[meson]} {ibin}')
         #plt.step(mass_bins[:-1], h_d0, label=f'D0 {ibin}')
     plt.legend()
-    plt.savefig(f'{meson}_mass.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/{meson_name}_mass.png')
     plt.close()
-    output[f'{meson}_mass'].plot1d(label=f'{meson_tex[meson]} mass')
-    output[f'xb_mass_{meson}'][{'xb': sum}].plot1d(label=f'{meson_tex[meson]} mass 1D')
+    h1 = output[f'{meson}_mass'][{'meson_id': hist.loc(pdgId)}]
+    h1.plot1d(label=f'{meson_tex[meson]} mass')
+    h2 = output[f'xb_mass_{meson}'][{'xb': sum, 'meson_id': hist.loc(pdgId)}]
+    h2.plot1d(label=f'{meson_tex[meson]} mass 1D')
+    #output[f'xb_mass_{meson}'][{'xb': sum}][{'meson_id': hist.loc(pdgId)}].plot1d(label=f'{meson_tex[meson]} mass 1D')
     plt.legend()
-    plt.savefig(f'{meson}_mass_full.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/{meson_name}_mass_full.png')
     plt.close()
     
     
-    mes = meson.replace('_','')
-    output[f'xb_{mes}'].plot1d(label='$x_{\mathrm{b}}$')
+    output[f'xb_{meson}'].plot1d(label='$x_{\mathrm{b}}$')
     #plt.step(x=xb_bins[:-1], y=output[f'xb_{mes}'], label='$x_{\mathrm{b}}$')
     plt.legend()
-    plt.savefig(f'xb_{meson}_all.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/xb_{meson_name}_all.png')
+    plt.close()
+
+    output['jet_id'][{'meson_id': hist.loc(pdgId), 'dataset': sum}].plot1d()
+    #print(output[f'jet_id'][{'dataset', sum, 'meson_id', hist.loc(mass_id[meson])}])
+    #output[f'jet_id'][{'dataset', sum, 'meson_id', hist.loc(mass_id[meson])}].plot1d(label='$x_{\mathrm{b}}$')
+    #plt.step(x=jet_id_bins[:-1], y=output[f'xb_{mes}'], label='$x_{\mathrm{b}}$')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/jet_id_{meson_name}_all.png')
     plt.close()
     
+    h = output[f'ctau'][{'meson_id': hist.loc(mass_id[meson_name])}]
+    h.plot1d()
+    plt.yscale('log')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/ctau_{meson_name}.png')
+    plt.close()
+
     if meson != 'd0':
         return
 
-    output[f'vtx_mass_{meson}'] *=  135 * 1000 * 832. / sumw
     h = output[f'vtx_mass_{meson}'][{'dataset': sum}]
     h.plot2d()
-    plt.savefig(f'vtx_mass_{meson}.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/vtx_mass_{meson}.png')
     plt.close()
 
 d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0 = 1.87, .01, 0, 1.78, 0.02, 0, 1.9, 0.02, 0, -2.27, 30
@@ -125,17 +171,12 @@ def plot_and_fit_mass(meson='d0'):
     print(f'Fitting {meson}')
     xb_mass = []
     bins = []
-    output[f'xb_{meson}'] *=  135 * 1000 * 832. / sumw
-    output[f'xb_mass_{meson}'] *=  135 * 1000 * 832. / sumw
-    #FIXME output[f'xb_{meson}'] *=  135 * 1000 * 832. / sumw
+    pdgId = mass_id[meson]
+    meson_name = meson
+    meson = meson.replace('_mu', '')
     h = output[f'xb_mass_{meson}']
-    #for ibin in range(1,10):
-        #output[f'd0_{ibin}'] *= 135 * 1000 * 832./sumw
-        #h_d0 = output[f'{meson}_{ibin}'].values()[0]
     for ibin in range(0,xb_bins.shape[0]-1):
-        #output[f'd0_{ibin}'] *= 135 * 1000 * 832./sumw
-        #h_d0 = output[f'{meson}_{ibin}'].values()[0]
-        x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum)}].values()[0]
+        x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId)}].values()[0]
         #FIXME x = output[f'xb_{meson}'].values()[0]
         ne0 = np.sum(x)*2
         if ne0 < 21:
@@ -159,13 +200,15 @@ def plot_and_fit_mass(meson='d0'):
         chisq = np.sum(np.nan_to_num(np.square(x - d0_mass_fit(mass_bins, *popt)[:-1]) / x, 0, posinf=0, neginf=0))
         #print(f'Chi^2 = {chisq} P = {chi2.cdf(chisq, 30)}')
     plt.legend(ncol=3, bbox_to_anchor=(-0.1, 1.15), loc='upper left', borderaxespad=0.)
-    plt.savefig(f'{meson}_mass_fit.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/{meson_name}_mass_fit.png')
     plt.close()
     plt.step(x=bins, y=xb_mass, label='$x_{\mathrm{b}}$ signal')
     #plt.step(x=xb_bins[:-1], y=xb_mass, label='$x_{\mathrm{b}}$ signal')
     #plt.hist(xb_mass, label='$x_{\mathrm{b}}$ signal')
     plt.legend()
-    plt.savefig(f'xb_{meson}_sig.png')
+    hep.cms.label(lumi=lumi)
+    plt.savefig(f'{path}/xb_{meson_name}_sig.png')
     plt.close()
 
 
