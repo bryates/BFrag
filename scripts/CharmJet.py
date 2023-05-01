@@ -703,10 +703,11 @@ fileset = {'ttbar': ['/eos/cms/store/group/phys_top/byates/PFNano/TTToSemiLepton
 
 import argparse
 parser = argparse.ArgumentParser(description='You can select which file to run over')
-parser.add_argument('--ifile', default=0 , help = 'File to run')
+parser.add_argument('--ifile', default=-1 , help = 'File to run')
 args = parser.parse_args()
 ifile = int(args.ifile)
-fileset = {'ttbar': [fileset['ttbar'][ifile]]}
+if ifile >= 0:
+    fileset = {'ttbar': [fileset['ttbar'][ifile]]}
 print(fileset)
 
 
@@ -769,6 +770,9 @@ class Processor(processor.ProcessorABC):
         d0_mass_axis = hist.axis.Regular(name='d0_mass', label='D0 mass [GeV]', bins=30, start=self.mass_bins[0], stop=self.mass_bins[-1])
         mass_tag_axis = hist.axis.Regular(name='d0_mu_mass', label='D0 mu-tag mass [GeV]', bins=30, start=self.mass_bins[0], stop=self.mass_bins[-1])
         mass_axes = [hist.axis.Regular(name=f'd0_{int(xb_bin*10)}', label='D0 mass [GeV] (' + str(round(self.xb_bins[ibin], 2)) + ' < $x_{\mathrm{b}}$ < ' + str(round(self.xb_bins[ibin+1], 2)) + ')', bins=30, start=1.7, stop=2.0) for ibin,xb_bin in enumerate(self.xb_bins[:-1])]
+        meson_axis = hist.axis.IntCategory(name="meson_id", label="Meson pdgId (411 D0, 41113 D0mu, 443 J/Psi, 443211 J/Psi+K)", categories=[411, 41113, 443])
+        jet_axis = hist.axis.IntCategory(name="jet_id", label="Jet flavor", categories=list(range(1,7)))
+        ctau_axis = hist.axis.Regular(name='ctau', label='Meson time of flight', bins=100, start=0, stop=100)
         self.output = processor.dict_accumulator({
             'j0pt': hist.Hist(dataset_axis, jpt_axis),
             'b0pt': hist.Hist(dataset_axis, bpt_axis),
@@ -776,8 +780,9 @@ class Processor(processor.ProcessorABC):
             'D0pt': hist.Hist(dataset_axis, D0pt_axis),
             'D0pipt': hist.Hist(dataset_axis, D0pipt_axis),
             'D0kpt': hist.Hist(dataset_axis, D0kpt_axis),
-            'xb_mass_jpsi'  : hist.Hist(dataset_axis, xb_axis, jpsi_mass_axis),
-            'xb_mass_d0'  : hist.Hist(dataset_axis, xb_axis, d0_mass_axis),
+            'jet_id'  : hist.Hist(dataset_axis, meson_axis, jet_axis),
+            'xb_mass_jpsi'  : hist.Hist(dataset_axis, meson_axis, xb_axis, jpsi_mass_axis),
+            'xb_mass_d0'  : hist.Hist(dataset_axis, meson_axis, xb_axis, d0_mass_axis),
             'xb_jpsi'  : hist.Hist(dataset_axis, xb_jpsi_axis),
             'xb_d0'  : hist.Hist(dataset_axis, xb_axis),
             'xb_d0mu'  : hist.Hist(dataset_axis, xb_axis),
@@ -788,20 +793,21 @@ class Processor(processor.ProcessorABC):
             'njets' : hist.Hist(dataset_axis, njets_axis),
             'nbjets' : hist.Hist(dataset_axis, nbjets_axis),
             'nleps' : hist.Hist(dataset_axis, nleps_axis),
-            'jpsi_mass': hist.Hist(dataset_axis, jpsi_mass_axis),
-            'd0_mass': hist.Hist(dataset_axis, d0_mass_axis),
+            'jpsi_mass': hist.Hist(dataset_axis, meson_axis, jpsi_mass_axis),
+            'd0_mass': hist.Hist(dataset_axis, meson_axis, d0_mass_axis),
             'd0_mu_mass': hist.Hist(dataset_axis, mass_tag_axis),
+            'ctau': hist.Hist(dataset_axis, ctau_axis, meson_axis),
             # FIXME make these dynamically
-            'd0_0' : hist.Hist(dataset_axis, mass_axes[0]),
-            'd0_1' : hist.Hist(dataset_axis, mass_axes[1]),
-            'd0_2' : hist.Hist(dataset_axis, mass_axes[2]),
-            'd0_3' : hist.Hist(dataset_axis, mass_axes[3]),
-            'd0_4' : hist.Hist(dataset_axis, mass_axes[4]),
-            'd0_5' : hist.Hist(dataset_axis, mass_axes[5]),
-            'd0_6' : hist.Hist(dataset_axis, mass_axes[6]),
-            'd0_7' : hist.Hist(dataset_axis, mass_axes[7]),
-            'd0_8' : hist.Hist(dataset_axis, mass_axes[8]),
-            'd0_9' : hist.Hist(dataset_axis, mass_axes[9]),
+            'd0_0' : hist.Hist(dataset_axis, meson_axis, mass_axes[0]),
+            'd0_1' : hist.Hist(dataset_axis, meson_axis, mass_axes[1]),
+            'd0_2' : hist.Hist(dataset_axis, meson_axis, mass_axes[2]),
+            'd0_3' : hist.Hist(dataset_axis, meson_axis, mass_axes[3]),
+            'd0_4' : hist.Hist(dataset_axis, meson_axis, mass_axes[4]),
+            'd0_5' : hist.Hist(dataset_axis, meson_axis, mass_axes[5]),
+            'd0_6' : hist.Hist(dataset_axis, meson_axis, mass_axes[6]),
+            'd0_7' : hist.Hist(dataset_axis, meson_axis, mass_axes[7]),
+            'd0_8' : hist.Hist(dataset_axis, meson_axis, mass_axes[8]),
+            'd0_9' : hist.Hist(dataset_axis, meson_axis, mass_axes[9]),
             'd0_mu_0' : hist.Hist(dataset_axis, mass_axes[0]),
             'd0_mu_1' : hist.Hist(dataset_axis, mass_axes[1]),
             'd0_mu_2' : hist.Hist(dataset_axis, mass_axes[2]),
@@ -830,7 +836,7 @@ class Processor(processor.ProcessorABC):
         ele  = events.Electron
         mu   = events.Muon
         leptons = ak.with_name(ak.concatenate([ele, mu], axis=1), 'PtEtaPhiMCandidate')
-        leptons = leptons[ak.argsort(leptons.pt, axis=1)][::-1]
+        leptons = leptons[ak.argsort(leptons.pt, axis=1, ascending=False)]
         
         '''
         jets_pt = ak.fill_none(ak.pad_none(jets.pt, 1), 0)
@@ -850,92 +856,76 @@ class Processor(processor.ProcessorABC):
         events['is_ttbar'] = is_ttbar(jets, bjets_tight, leptons)
         selections.add('ttbar', events.is_ttbar)
         ht = ak.sum(jets.pt, axis=-1)
-        j0pt = ak.fill_none(ak.pad_none(jets.pt, 1), 0)[:,0]
-        l0pt = ak.fill_none(ak.pad_none(ak.pad_none(leptons.pt, 1), -1)[:,0], -1)
-        b0pt = ak.fill_none(bjets_tight.pt[:,0], -1)
+        j0pt = ak.fill_none(ak.firsts(jets.pt), -1)
+        l0pt = ak.fill_none(ak.firsts(leptons.pt), -1)
+        b0pt = ak.fill_none(ak.firsts(bjets_tight.pt), -1)
         
         # Charm meson candidates from b-jets
         charm_cand = events.BToCharm
-        #chi2_mask = ((charm_cand.chi2 / charm_cand.ndof) < 5) & (charm_cand.svprob>0.02) # Normalized chi^2 and vertex probability
+        ptsort = ak.argsort(charm_cand.pt, ascending=False)
+        charm_cand = events.BToCharm[ptsort]
+        ctau_mask = ak.fill_none((charm_cand.l_xy / charm_cand.l_xy_unc) > 10, False) # Just d_xy for now
+        ctau = ak.firsts((charm_cand.l_xy / charm_cand.l_xy_unc)) # Just d_xy for now
         chi2_mask = charm_cand.svprob>0.02
         b_mask = jets[charm_cand.jetIdx].btagDeepFlavB > tight
         d0_mask = chi2_mask & b_mask & (charm_cand.jetIdx>-1) & (np.abs(charm_cand.meson_id) == 411)
         jpsi_mask = chi2_mask & b_mask & (charm_cand.jetIdx>-1) & (np.abs(charm_cand.meson_id) == 443)
         d0_mask = chi2_mask & (charm_cand.jetIdx>-1) & (np.abs(charm_cand.meson_id) == 411)
-        jpsi_mask = chi2_mask  & (charm_cand.jetIdx>-1) & (np.abs(charm_cand.meson_id) == 443)
-        d0 = charm_cand[d0_mask]
-        selections.add('jpsi', ak.any(jpsi_mask, axis=1))
-        selections.add('d0', ak.any(d0_mask, axis=1))
-        d0mass = ak.fill_none(ak.flatten(d0.fit_mass[events.is_ttbar]), -1)
-        ptsort = ak.argsort(charm_cand.pt, ascending=False)
-        mass = ak.fill_none(ak.firsts(charm_cand[ptsort].fit_mass), -1)
-        xb = ak.fill_none(ak.flatten((d0.fit_pt / jets[d0.jetIdx].pt)[events.is_ttbar]), -1)
-        xb = ak.fill_none(ak.firsts((charm_cand.fit_pt / jets[charm_cand.jetIdx].pt)[ptsort]), -1)
+        jpsi_mask = chi2_mask & (charm_cand.jetIdx>-1) & (np.abs(charm_cand.meson_id) == 443)
+        selections.add('jpsi', ak.firsts(jpsi_mask, axis=1))
+        selections.add('d0', ak.firsts(d0_mask, axis=1))
+        selections.add('ctau', ak.firsts(ctau_mask, axis=1))
+        mass = ak.firsts(charm_cand.fit_mass)
         weight  = events.Generator.weight
 
-        #binned_masses = [d0mass[(xb > low) & (xb < high)] for low,high in zip(self.xb_bins[:-1], self.xb_bins[1:])]
         # D0 mu tagged
-        d0_mu_mask = abs(d0.x_id)==13
-        d0_mu = d0[d0_mu_mask]
+        d0_mu_mask = abs(charm_cand.x_id)==13
+        #selections.add('d0mu', ak.any(d0_mask, axis=1))
+        charm_cand[d0_mu_mask]['meson_id'] = 41113
+        d0_mu = charm_cand[d0_mu_mask]
         d0_mu = d0_mu[ak.argsort(d0_mu.pt, ascending=False)] # Sort in case we just want the hardest muon
-        xb_d0mu = ak.flatten((d0_mu.pt + d0_mu.x_pt)[events.is_ttbar] / jets.pt[d0_mu.jetIdx][events.is_ttbar])
+        #xb_d0mu = ak.flatten((d0_mu.pt + d0_mu.x_pt)[events.is_ttbar] / jets.pt[d0_mu.jetIdx][events.is_ttbar])
         d0_mu_mass = ak.fill_none(ak.flatten(d0_mu.fit_mass[events.is_ttbar]), -1)
-        #d0mu_binned_masses = [d0_mu_mass[(xb_d0mu > low) & (xb_d0mu < high)] for low,high in zip(self.xb_bins[:-1], self.xb_bins[1:])]
 
-        self.output['j0pt'].fill(dataset=dataset, j0pt=j0pt[events.is_ttbar])
-        self.output['b0pt'].fill(dataset=dataset, b0pt=b0pt[events.is_ttbar])
-        self.output['l0pt'].fill(dataset=dataset, l0pt=l0pt[events.is_ttbar])
-        self.output['njets'].fill(dataset=dataset, njets=ak.num(jets[events.is_ttbar]))
-        self.output['nbjets'].fill(dataset=dataset, nbjets=ak.num(bjets_tight[events.is_ttbar]))
-        self.output['nleps'].fill(dataset=dataset, nleps=ak.num(leptons[events.is_ttbar]))
-        self.output['HT'].fill(dataset=dataset, HT=ht)
-        #self.output['D0pt'].fill(dataset=dataset, D0pt=d0pt)
-        #self.output['xb_ch'].fill(dataset=dataset, xb_ch=xb_ch[events.is_ttbar])
-        #self.output['d0'].fill(dataset=dataset, d0=d0_imp)
-        # mu_tag is at jet level, cartesian associates each PF in a jet with the jet-level flag
-        #d0_tag, is_tag = ak.unzip(ak.cartesian([d0_mass, mu_tag]))
-        #self.output['d0_mu_mass'].fill(dataset=dataset, d0_mu_mass=ak.fill_none(ak.flatten(d0_tag[is_tag]), 0))
-        jpsi_sel = selections.all(*['ttbar', 'jpsi'])
-        self.output['xb_jpsi'].fill(dataset=dataset, xb_jpsi=xb[jpsi_sel])
-        self.output['jpsi_mass'].fill(dataset=dataset, jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
-        d0_sel = selections.all(*['ttbar', 'd0'])
-        self.output['xb_d0'].fill(dataset=dataset, xb=xb[d0_sel])
-        self.output['xb_mass_jpsi'].fill(dataset=dataset, xb=xb[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
-        self.output['xb_mass_d0'].fill(dataset=dataset, xb=xb[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
-        self.output['vtx_mass_d0'].fill(dataset=dataset, vtx=ak.fill_none(ak.firsts(charm_cand.svprob[ptsort]), -1)[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
-        self.output['chi_mass_d0'].fill(dataset=dataset, chi=ak.fill_none(ak.firsts(charm_cand.chi2[ptsort]), -1)[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
-        #self.output['chi_mass_d0'].fill(dataset=dataset, chi=ak.fill_none(ak.firsts(charm_cand.chi2[ptsort] / charm_cand.ndof[ptsort]), -1)[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
-        self.output['vtx_mass_jpsi'].fill(dataset=dataset, vtx=ak.fill_none(ak.firsts(charm_cand.svprob[ptsort]), -1)[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
-        self.output['chi_mass_jpsi'].fill(dataset=dataset, chi=ak.fill_none(ak.firsts(charm_cand.chi2[ptsort]), -1)[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
-        #self.output['chi_mass_jpsi'].fill(dataset=dataset, chi=ak.fill_none(ak.firsts(charm_cand.chi2[ptsort] / charm_cand.ndof[ptsort]), -1)[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
-        #self.output['xb_d0mu'].fill(dataset=dataset, xb=xb_d0mu)
-        self.output['d0_mass'].fill(dataset=dataset, d0_mass=mass[d0_sel], weight=weight[d0_sel])
-        self.output['d0_mu_mass'].fill(dataset=dataset, d0_mu_mass=d0_mu_mass)
-        for ibin in range(len(self.xb_bins)-1):
-            xb_mask = d0_sel & (xb > self.xb_bins[ibin]) & (xb < self.xb_bins[ibin+1])
-            self.output[f'd0_{ibin}'].fill(**{'dataset': dataset, f'd0_{ibin}': mass[xb_mask], 'weight': weight[xb_mask]})
-            #self.output[f'd0_{ibin}'].fill(**{'dataset': dataset, f'd0_{ibin}': binned_masses[ibin]})
-            '''
-            if ak.any(d0_mu_mask):
-                self.output[f'd0_mu_{ibin}'].fill(**{'dataset': dataset, f'd0_{ibin}': d0mu_binned_masses[ibin]})
-            '''
-        '''
-        # FIXME make these dynamically
-        self.output['d0_0'].fill(dataset=dataset, d0_0=binned_masses[0])
-        self.output['d0_1'].fill(dataset=dataset, d0_1=binned_masses[1])
-        self.output['d0_2'].fill(dataset=dataset, d0_2=binned_masses[2])
-        self.output['d0_3'].fill(dataset=dataset, d0_3=binned_masses[3])
-        self.output['d0_4'].fill(dataset=dataset, d0_4=binned_masses[4])
-        self.output['d0_5'].fill(dataset=dataset, d0_5=binned_masses[5])
-        self.output['d0_6'].fill(dataset=dataset, d0_6=binned_masses[6])
-        self.output['d0_7'].fill(dataset=dataset, d0_7=binned_masses[7])
-        self.output['d0_8'].fill(dataset=dataset, d0_8=binned_masses[8])
-        #self.output['d0_9'].fill(dataset=dataset, d0_9=binned_masses[9])
-        '''
-        #self.output['D0pipt'].fill(dataset=dataset, D0pipt=d0pi_lead_pt)
-        #self.output['D0kpt'].fill(dataset=dataset, D0kpt=d0pi_lead_pt)
-        self.output['sumw'][dataset]  = ak.sum(events.Generator.weight)
-        self.output['sumw2'][dataset] = ak.sum(np.square(events.Generator.weight))
+        # Define xb
+        xb = (charm_cand.fit_pt / jets[charm_cand.jetIdx].pt)
+        xb_mu = (charm_cand.x_pt / jets[charm_cand.jetIdx].pt)
+        #xb[d0_mu_mask] += xb_mu
+        #xb = ak.fill_none(ak.firsts((charm_cand.fit_pt / jets[charm_cand.jetIdx].pt)[ptsort]), -1)
+        xb = ak.firsts(xb)
+        #xb = ak.fill_none(ak.firsts(xb), -1)
+
+        meson_id = ak.firsts(charm_cand.meson_id)
+        jet_id = ak.firsts(jets[charm_cand.jetIdx].partonFlavour)
+        vtx = ak.firsts(charm_cand.svprob)
+        chi = ak.firsts(charm_cand.chi2)
+
+        ttbar_sel = selections.all('ttbar')
+        self.output['j0pt'].fill(dataset=dataset, j0pt=j0pt[ttbar_sel], weight=weight[ttbar_sel])
+        self.output['b0pt'].fill(dataset=dataset, b0pt=b0pt[ttbar_sel], weight=weight[ttbar_sel])
+        self.output['l0pt'].fill(dataset=dataset, l0pt=l0pt[ttbar_sel], weight=weight[ttbar_sel])
+        self.output['HT'].fill(dataset=dataset, HT=ht[ttbar_sel], weight=weight[ttbar_sel])
+        jpsi_sel = selections.all('ttbar', 'jpsi', 'ctau')
+        self.output['xb_jpsi'].fill(dataset=dataset, xb_jpsi=xb[jpsi_sel], weight=weight[jpsi_sel])
+        self.output['jpsi_mass'].fill(dataset=dataset, meson_id=meson_id[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
+        d0_sel = selections.all('ttbar', 'd0', 'ctau')
+        self.output['njets'].fill(dataset=dataset, njets=ak.num(jets)[d0_sel], weight=weight[d0_sel])
+        self.output['nbjets'].fill(dataset=dataset, nbjets=ak.num(bjets_tight)[d0_sel], weight=weight[d0_sel])
+        self.output['nleps'].fill(dataset=dataset, nleps=ak.num(leptons)[d0_sel], weight=weight[d0_sel])
+        self.output['jet_id'].fill(dataset=dataset, jet_id=jet_id[d0_sel], meson_id=meson_id[d0_sel], weight=weight[d0_sel])
+        self.output['jet_id'].fill(dataset=dataset, jet_id=jet_id[jpsi_sel], meson_id=meson_id[jpsi_sel], weight=weight[jpsi_sel])
+        self.output['xb_d0'].fill(dataset=dataset, xb=xb[d0_sel], weight=weight[d0_sel])
+        self.output['xb_mass_jpsi'].fill(dataset=dataset, meson_id=meson_id[jpsi_sel], xb=xb[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
+        self.output['xb_mass_d0'].fill(dataset=dataset, meson_id=meson_id[d0_sel], xb=xb[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
+        self.output['vtx_mass_d0'].fill(dataset=dataset, vtx=vtx[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
+        self.output['chi_mass_d0'].fill(dataset=dataset, chi=chi[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
+        self.output['vtx_mass_jpsi'].fill(dataset=dataset, vtx=vtx[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
+        self.output['chi_mass_jpsi'].fill(dataset=dataset, chi=chi[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
+        self.output['d0_mass'].fill(dataset=dataset, meson_id=meson_id[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
+        self.output['ctau'].fill(dataset=dataset, meson_id=meson_id[d0_sel], ctau=ctau[d0_sel], weight=weight[d0_sel])
+        self.output['ctau'].fill(dataset=dataset, meson_id=meson_id[jpsi_sel], ctau=ctau[jpsi_sel], weight=weight[jpsi_sel])
+        self.output['sumw'][dataset]  = ak.sum(events.Generator.weight, axis=0)
+        self.output['sumw2'][dataset] = ak.sum(np.square(events.Generator.weight), axis=0)
         return self.output
 
     def postprocess(self, accumulator):
