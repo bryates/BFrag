@@ -745,8 +745,8 @@ def is_ttbar(jets, bjets, leptons):
 
 class Processor(processor.ProcessorABC):
     def __init__(self):
-        self.jpsi_mass_bins = np.linspace(2.8, 3.4, 30)
-        self.mass_bins = np.linspace(1.7, 2.0, 30)
+        self.jpsi_mass_bins = np.linspace(2.8, 3.4, 60)
+        self.mass_bins = np.linspace(1.7, 2.0, 60)
         self.xb_bins = np.linspace(0, 1, 11)
 
         dataset_axis = hist.axis.StrCategory(name="dataset", label="", categories=[], growth=True)
@@ -766,9 +766,9 @@ class Processor(processor.ProcessorABC):
         njets_axis = hist.axis.Regular(name='njets', label='$N_{\mathrm{jets}}$', bins=10, start=0, stop=10)
         nbjets_axis = hist.axis.Regular(name='nbjets', label='$N_{\mathrm{b-jets}}$', bins=10, start=0, stop=10)
         nleps_axis = hist.axis.Regular(name='nleps', label='$N_{\mathrm{leps}}$', bins=10, start=0, stop=10)
-        jpsi_mass_axis = hist.axis.Regular(name='jpsi_mass', label='J/Psi mass [GeV]', bins=30, start=self.jpsi_mass_bins[0], stop=self.jpsi_mass_bins[-1])
-        d0_mass_axis = hist.axis.Regular(name='d0_mass', label='D0 mass [GeV]', bins=30, start=self.mass_bins[0], stop=self.mass_bins[-1])
-        mass_axes = [hist.axis.Regular(name=f'd0_{int(xb_bin*10)}', label='D0 mass [GeV] (' + str(round(self.xb_bins[ibin], 2)) + ' < $x_{\mathrm{b}}$ < ' + str(round(self.xb_bins[ibin+1], 2)) + ')', bins=30, start=1.7, stop=2.0) for ibin,xb_bin in enumerate(self.xb_bins[:-1])]
+        jpsi_mass_axis = hist.axis.Regular(name='jpsi_mass', label='J/Psi mass [GeV]', bins=60, start=self.jpsi_mass_bins[0], stop=self.jpsi_mass_bins[-1])
+        d0_mass_axis = hist.axis.Regular(name='d0_mass', label='D0 mass [GeV]', bins=60, start=self.mass_bins[0], stop=self.mass_bins[-1])
+        mass_axes = [hist.axis.Regular(name=f'd0_{int(xb_bin*10)}', label='D0 mass [GeV] (' + str(round(self.xb_bins[ibin], 2)) + ' < $x_{\mathrm{b}}$ < ' + str(round(self.xb_bins[ibin+1], 2)) + ')', bins=60, start=1.7, stop=2.0) for ibin,xb_bin in enumerate(self.xb_bins[:-1])]
         meson_axis = hist.axis.IntCategory(name="meson_id", label="Meson pdgId (411 D0, 41113 D0mu, 443 J/Psi, 443211 J/Psi+K)", categories=[411, 41113, 443])
         jet_axis = hist.axis.IntCategory(name="jet_id", label="Jet flavor", categories=list(range(1,7)))
         ctau_axis = hist.axis.Regular(name='ctau', label='Meson time of flight', bins=100, start=0, stop=100)
