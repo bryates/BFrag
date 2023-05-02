@@ -51,7 +51,7 @@ with uproot.recreate('output.root') as fout:
         if 'sumw' in key:
             continue #sumw and sumw2 are dicts, not hists
         for s in output[key].axes['dataset']:
-            fout[ f'histo/{key}_{s}'] = output[key][{'dataset': s}]
+            fout[f'histo/{key}_{s}'] = output[key][{'dataset': s}]
 
 
 def d0_mass_fit(mass, mean, sigma, nsig, mean_kk, sigma_kk, nkk, mean_pp, sigma_pp, npp, l, nbkg):
@@ -65,7 +65,37 @@ def d0_mass_fit(mass, mean, sigma, nsig, mean_kk, sigma_kk, nkk, mean_pp, sigma_
     npp  * np.exp(-1/2 * (np.square(mass - mean_pp) / np.square(sigma_pp))) + \
     nbkg * np.exp(l * mass)
 
-mass_bins = np.linspace(1.7, 2.0, 31)
+
+def jpsi_mass_fit(mass, mean, sigma, alpha, n, nsig, l, nbkg):
+    '''
+    Define function for fitting J/Psi mass peak
+    Peak Crystal Ball + exponential bkg
+    ''' 
+    t = (mass - mean) / sigma
+    cb = 0
+    if type(mass) == list:
+        cb = np.zeros(len(mass))
+    cb1 = np.exp(-1/2 * np.square(t))
+    a = np.power(n / alpha, n) * np.exp(-1/2 * np.square(alpha))
+    #cb2 = np.power(n / alpha, n) * np.exp(-1/2 * np.square(alpha)) / np.power(((n / alpha) - alpha) - t, n)
+    b = n / alpha - alpha
+    cb2 = a / np.power(b - t, n)
+    if type(mass) == list:
+        cb[t<-alpha]  = cb2[t<-alpha]
+        cb[t>=-alpha] = cb1[t>=-alpha]
+    else:
+        cb = cb2 if t < -alpha else cb1
+         
+    '''
+    cb = np.exp(-1/2 * np.square(t))
+    if t<-alpha:
+        cb = np.power(n / alpha, n) * np.exp(-1/2 * np.square(alpha)) / np.power(((n / alpha) - alpha) - t, n)
+    '''
+    return nsig * cb  + nbkg * np.exp(l * mass)
+
+
+d0_mass_bins = np.linspace(1.7, 2.0, 61)
+jpsi_mass_bins = np.linspace(2.8, 3.4, 61)
 xb_bins = np.linspace(0, 1, 11)
 
 meson_tex = {'d0': '$\mathrm{D^{0}}$', 'jpsi': '$\mathrm{J/\psi}$'}
@@ -97,7 +127,7 @@ def plot_mass(meson='d0'):
     '''
     Plot and fit the specified meson mass
     '''
-    print(f'Fitting {meson}')
+    print(f'Plotting {meson}')
     xb_mass = []
     pdgId = mass_id[meson]
     meson_name = meson
@@ -109,8 +139,11 @@ def plot_mass(meson='d0'):
     plt.close()
     h = output[f'xb_mass_{meson}'][{'dataset': sum, 'meson_id': hist.loc(pdgId)}]
     xb_bins = h.axes[0].edges
+    fout = uproot.update('output.root')
     for ibin in range(0,xb_bins.shape[0]-1):
         x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum)}]
+        for s in output[f'xb_mass_{meson_name}'].axes['dataset']:
+            fout[f'histo/xb_mass_{meson_name}_{ibin}_{s}'] = output[f'xb_mass_{meson_name}'][{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'dataset': s, 'meson_id': hist.loc(pdgId)}]
         '''
         if np.sum(x.values()[0]) < 1:
             continue
@@ -157,6 +190,7 @@ def plot_mass(meson='d0'):
     plt.close()
 
 d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0 = 1.87, .01, 0, 1.78, 0.02, 0, 1.9, 0.02, 0, -2.27, 30
+jpsi_mean0, jpsi_sigma0, jpsi_n0, jpsi_alpha0, l0 = 3.097, 0.033, 1, 1.4, -0.5
 def plot_and_fit_mass(meson='d0'):
     '''
     Plot and fit the specified meson mass
@@ -168,6 +202,10 @@ def plot_and_fit_mass(meson='d0'):
     meson_name = meson
     meson = meson.replace('_mu', '')
     h = output[f'xb_mass_{meson}']
+    fit_func = d0_mass_fit
+    mass_bins = d0_mass_bins
+    if 'jpsi' in meson:
+        mass_bins = jpsi_mass_bins
     for ibin in range(0,xb_bins.shape[0]-1):
         x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId)}].values()[0]
         ne0 = np.sum(x)*2
@@ -179,17 +217,34 @@ def plot_and_fit_mass(meson='d0'):
         nd0 = .001 * ne0
         npp = .1 * nd0
         nkk = .1 * nd0
+        fit_args = [x, d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0]
+        fit_init = [d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0]
+        print(x[15])
+        print(ne0)
+        if 'jpsi' in meson:
+            fit_func = jpsi_mass_fit
+            fit_args = [x, jpsi_mean0, jpsi_sigma0, jpsi_alpha0, jpsi_n0, np.max(x), l0, 0]#.001*ne0]
+            fit_init = fit_args[1:]#[jpsi_mean0, jpsi_sigma0, jpsi_n0, jpsi_alpha0, ]
         plt.step(mass_bins[:-1], x, label=f'{meson_tex[meson]} {np.round(xb_bins[ibin], 1)} < ' + '$x_{\mathrm{b}}$' + f' < {np.round(xb_bins[ibin+1], 1)}')
-        g = [d0_mass_fit(x, d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0) for x in mass_bins]
+        fit_bounds = ([1.85, 0, 0, 1.77, 0, 0, 1.88, 0, 0, -10, 0], [1.88, .02, ne0, 1.79, .02, ne0, 1.91, .02, ne0, 10, ne0])
+        #g = [fit_func(x, *fit_init) for x in mass_bins]
+        #plt.plot(mass_bins, g, label=f'Guess {ibin}')
+        if 'jpsi' in meson:
+            fit_bounds = ([2.8, 0.02, 0, 0, 0, -5, 0], [3.2, 0.05, 2, 5, 10*ne0, 5, ne0])
         try:
-            popt, pcov = curve_fit(d0_mass_fit, mass_bins[:-1], x, p0=[d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0], bounds=([1.85, 0, 0, 1.77, 0, 0, 1.88, 0, 0, -10, 0], [1.88, .02, ne0, 1.79, .02, ne0, 1.91, .02, ne0, 10, ne0]))
+            popt, pcov = curve_fit(fit_func, mass_bins[:-1], x, p0=fit_init, bounds=fit_bounds)
         except:
+            print(f'Fit {ibin} failed for {meson}!')
             continue
-        plt.plot(mass_bins, d0_mass_fit(mass_bins, *popt), label=f'Fit {ibin}')
-        print(f'N D0 {round(popt[2])} +/- {round(np.sqrt(pcov[2][2]))}, N bkg {round(popt[10])} +/- {round(np.sqrt(pcov[10][10]))}')
-        xb_mass.append(popt[2])
+        plt.plot(mass_bins, fit_func(mass_bins, *popt), label=f'Fit {ibin}')
+        if 'd0' in meson:
+            print(f'N D0 {round(popt[2])} +/- {round(np.sqrt(pcov[2][2]))}, N bkg {round(popt[10])} +/- {round(np.sqrt(pcov[10][10]))}')
+            xb_mass.append(popt[2])
+        elif 'jpsi' in meson:
+            print(f'N J/Psi {round(popt[4])} +/- {round(np.sqrt(pcov[4][4]))}, N bkg {round(popt[6])} +/- {round(np.sqrt(pcov[6][6]))}')
+            xb_mass.append(popt[4])
         bins.append(xb_bins[ibin])
-        chisq = np.sum(np.nan_to_num(np.square(x - d0_mass_fit(mass_bins, *popt)[:-1]) / x, 0, posinf=0, neginf=0))
+        chisq = np.sum(np.nan_to_num(np.square(x - fit_func(mass_bins, *popt)[:-1]) / x, 0, posinf=0, neginf=0))
         #print(f'Chi^2 = {chisq} P = {chi2.cdf(chisq, 30)}')
     plt.legend(ncol=3, bbox_to_anchor=(-0.1, 1.15), loc='upper left', borderaxespad=0.)
     hep.cms.label(lumi=lumi)
@@ -203,6 +258,7 @@ def plot_and_fit_mass(meson='d0'):
 
 
 plot_and_fit_mass('d0')
+plot_and_fit_mass('jpsi')
 plot_mass('d0')
 plot_mass('jpsi')
-plot_mass('d0_mu')
+#plot_mass('d0_mu')
