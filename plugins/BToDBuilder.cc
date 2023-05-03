@@ -16,6 +16,8 @@
 #include <map>
 #include <string>
 #include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/JetReco/interface/GenJetCollection.h"
+//#include <DataFormats/JetReco/interface/GenJetMatching.h>
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
@@ -38,6 +40,7 @@ public:
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
     jetsToken_(consumes<pat::JetCollection>(cfg.getParameter<edm::InputTag>("jets"))),
     jets_selection_{cfg.getParameter<std::string>("jetsSelection")},
+    genJetsToken_(consumes<reco::GenJetCollection>(cfg.getParameter<edm::InputTag>("genJets"))),
     beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )},
     vertex_src_{consumes<reco::VertexCollection>( cfg.getParameter<edm::InputTag>("offlinePrimaryVertexSrc") )}
     {
@@ -58,6 +61,7 @@ private:
 
   const edm::EDGetTokenT<pat::JetCollection> jetsToken_;
   const StringCutObjectSelector<pat::Jet> jets_selection_; 
+  const edm::EDGetTokenT<reco::GenJetCollection> genJetsToken_;
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
   const edm::EDGetTokenT<reco::VertexCollection> vertex_src_;
@@ -71,6 +75,11 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
   edm::Handle<reco::VertexCollection> pvtxs;
   evt.getByToken(vertex_src_, pvtxs);
+  if (pvtxs->empty()) return 0; // skip the event if no PV found
+  const reco::Vertex &primVtx = pvtxs->front();
+  reco::VertexRef primVtxRef(pvtxs,0);
+  ev_.nvtx=pvtxs->size();
+  if(ev_.nvtx==0) return 0;
 
   edm::ESHandle<MagneticField> fieldHandle;
   iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
@@ -88,6 +97,16 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   //for jets
   edm::Handle<pat::JetCollection> jets;
   evt.getByToken(jetsToken_, jets);
+
+  //for gen jets
+  edm::Handle<reco::GenJetCollection> genJets;
+  evt.getByToken(genJetsToken_, genJets);
+  // Match reco jets to gen jets
+  /*
+  std::vector<std::pair<const reco::PFJet*, const reco::GenJet*>> jetMatches;
+  reco::GenJetMatcher matcher(*genJets, *jets, true, true, 0.4);
+  matcher.getJetMatches(jetMatches);
+  */
 
   std::vector<size_t> used_pi_id, used_k_id, used_x_id;
 
@@ -212,17 +231,18 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         cand.addUserFloat("vtx_ey", sqrt(fitter.fitted_vtx_uncertainty().cyy()));
         cand.addUserFloat("vtx_ez", sqrt(fitter.fitted_vtx_uncertainty().czz()));
 
-        float sigmax = sqrt(fitter.fitted_vtx_uncertainty().cxx());
-        float sigmay = sqrt(fitter.fitted_vtx_uncertainty().cyy());
-        float sigmaz = sqrt(fitter.fitted_vtx_uncertainty().czz());
+        float sigmax = sqrt(fitter.fitted_vtx_uncertainty().cxx() + pow(primVtx.x(),2));
+        float sigmay = sqrt(fitter.fitted_vtx_uncertainty().cyy() + pow(primVtx.y(),2));
+        float sigmaz = sqrt(fitter.fitted_vtx_uncertainty().czz() + pow(primVtx.z(),2));
+   GlobalPoint Dispbeamspot(-1*( (bm.x0()-Bvtx.x()) + (Bvtx.z()-bm.z0()) * bm.dxdz()),
 
         float sigmaL3D = 1.0 / sqrt( pow( (fit_p4.Px()/fit_p4.M())/sigmax,2 ) +
                                      pow( (fit_p4.Py()/fit_p4.M())/sigmay,2 ) +
                                      pow( (fit_p4.Pz()/fit_p4.M())/sigmaz,2 ) );
 
-        float L3D = (fit_p4.Px()/fit_p4.M()) * pow(sigmaL3D/sigmax,2) * (cand.vx()) +
-                    (fit_p4.Py()/fit_p4.M()) * pow(sigmaL3D/sigmay,2) * (cand.vy()) +
-                    (fit_p4.Pz()/fit_p4.M()) * pow(sigmaL3D/sigmaz,2) * (cand.vz());
+        float L3D = (fit_p4.Px()/fit_p4.M()) * pow(sigmaL3D/sigmax,2) * (cand.vx() - primVtx.x()) +
+                    (fit_p4.Py()/fit_p4.M()) * pow(sigmaL3D/sigmay,2) * (cand.vy() - primVtx.y()) +
+                    (fit_p4.Pz()/fit_p4.M()) * pow(sigmaL3D/sigmaz,2) * (cand.vz() - primVtx.z());
 
         cand.addUserFloat("vtx_l3d", L3D);
         cand.addUserFloat("vtx_el3d", sigmaL3D);
@@ -299,7 +319,45 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
           cand.addUserInt("x_idx", -1);
         } 
 
-        if( !post_vtx_selection_(cand) ) continue;        
+        if( !post_vtx_selection_(cand) ) continue;
+        int best_pi_id = 0;
+        int best_k_id = 0;
+        int best_pi_idx = -1;
+        int best_k_idx = -1;
+        int best_pi_mother = -1;
+        int best_k_mother = -1;
+        for(auto genJet = genJets->begin();  genJet != genJets->end(); ++genJet) {
+          if( !jets_selection_(*genJet) ) continue;
+          if(1 - jet->pt() / genJet->pt() > 0.2) continue;
+          if(reco::deltaR(*jet, *genJet) > 0.4) continue;
+          size_t ngdau = jet->numberOfDaughters();
+          //ngdau = ngdau > 4 ? 4 : ngdau; // Fit sometimes crashes at large candidates, low pT not modeled well anyway
+
+          for(size_t gTrk=0; gTrk < ngdau; ++gTrk) {
+            if(genJet->daughter(iTrk) == nullptr) continue;
+            const reco::Candidate &trkg = dynamic_cast<const reco::Candidate &>(*genJet->daughter(iTrk));
+            if(abs(trkg.pdgId()) != 13 && abs(trkg.pdgId()) != 211 && abs(trkg.pdgId()) != 321) continue; // Only check mu, pi, and K
+            if(reco::deltaR(trk1, trkg) > 0.01 && reco::deltaR(trk2, trkg) > 0.01) continue; // no match found
+            if(reco::deltaR(trk1, trkg) < 0.01) {
+              best_pi_id = trkg.pdgId();
+              best_pi_idx = gTrk;
+              if(trkg.mother(0) != nullptr)
+                best_pi_mother = trkg.mother(0)->pdgId();
+            }
+            else if(reco::deltaR(trk2, trkg) < 0.01) {
+              best_k_id = trkg.pdgId();
+              best_k_idx = gTrk;
+              if(trkg.mother(0) != nullptr)
+                best_k_mother = trkg.mother(0)->pdgId();
+            }
+          } // gTrk
+        } // genJet
+        cand.addUserInt("pi_gidx", best_pi_idx);
+        cand.addUserInt("pi_gid", best_pi_id);
+        cand.addUserInt("pi_mother", best_pi_mother);
+        cand.addUserInt("k_gidx", best_k_idx);
+        cand.addUserInt("k_gid", best_k_id);
+        cand.addUserInt("k_mother", best_k_mother);
 
         ret_val->push_back(cand);
 

@@ -85,6 +85,7 @@ BToD = cms.EDProducer(
     offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
     tracks = cms.InputTag("packedPFCandidates"),
     jets = cms.InputTag("slimmedJets"),
+    genJets = cms.InputTag("slimmedGenJets"),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
     jetsSelection = cms.string('pt > 30 && abs(eta) < 2.5'),
     # This in principle can be different between electrons and muons
@@ -107,6 +108,10 @@ BToDTable = cms.EDProducer(
         jetIdx = uint('jid'),
         piIdx = uint('pi_idx'),
         kIdx = uint('k_idx'),
+        pigId = uint('pi_gid'),
+        kgId = uint('k_gid'),
+        pigIdx = uint('pi_gidx'),
+        kgIdx = uint('k_gidx'),
         # fit and vtx info
         chi2 = ufloat('sv_chi2'),
         ndof = ufloat('sv_ndof'),
