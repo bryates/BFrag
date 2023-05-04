@@ -19,6 +19,7 @@
 #include "DataFormats/JetReco/interface/GenJetCollection.h"
 //#include <DataFormats/JetReco/interface/GenJetMatching.h>
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/Math/interface/deltaR.h"
@@ -38,6 +39,8 @@ public:
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
+    genIsotrk_selection_{cfg.getParameter<std::string>("genIsoTracksSelection")},
+    genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
     jetsToken_(consumes<pat::JetCollection>(cfg.getParameter<edm::InputTag>("jets"))),
     jets_selection_{cfg.getParameter<std::string>("jetsSelection")},
     genJetsToken_(consumes<reco::GenJetCollection>(cfg.getParameter<edm::InputTag>("genJets"))),
@@ -58,6 +61,9 @@ private:
 
   const edm::EDGetTokenT<pat::PackedCandidateCollection> isotracksToken_;
   const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
+  const StringCutObjectSelector<pat::PackedGenParticle> genIsotrk_selection_; 
+  const edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticlesToken_;
+
 
   const edm::EDGetTokenT<pat::JetCollection> jetsToken_;
   const StringCutObjectSelector<pat::Jet> jets_selection_; 
@@ -75,11 +81,11 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
   edm::Handle<reco::VertexCollection> pvtxs;
   evt.getByToken(vertex_src_, pvtxs);
-  if (pvtxs->empty()) return 0; // skip the event if no PV found
+  if (pvtxs->empty()) return; // skip the event if no PV found
   const reco::Vertex &primVtx = pvtxs->front();
   reco::VertexRef primVtxRef(pvtxs,0);
-  ev_.nvtx=pvtxs->size();
-  if(ev_.nvtx==0) return 0;
+  int nvtx = pvtxs->size();
+  if(nvtx==0) return;
 
   edm::ESHandle<MagneticField> fieldHandle;
   iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
@@ -93,6 +99,10 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   edm::Handle<pat::PackedCandidateCollection> iso_tracks;
   evt.getByToken(isotracksToken_, iso_tracks);
   unsigned int nTracks     = iso_tracks->size();
+
+  // for gen paricles
+  edm::Handle<pat::PackedGenParticleCollection> genParticles;
+  evt.getByToken(genParticlesToken_,genParticles);
 
   //for jets
   edm::Handle<pat::JetCollection> jets;
@@ -234,7 +244,6 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         float sigmax = sqrt(fitter.fitted_vtx_uncertainty().cxx() + pow(primVtx.x(),2));
         float sigmay = sqrt(fitter.fitted_vtx_uncertainty().cyy() + pow(primVtx.y(),2));
         float sigmaz = sqrt(fitter.fitted_vtx_uncertainty().czz() + pow(primVtx.z(),2));
-   GlobalPoint Dispbeamspot(-1*( (bm.x0()-Bvtx.x()) + (Bvtx.z()-bm.z0()) * bm.dxdz()),
 
         float sigmaL3D = 1.0 / sqrt( pow( (fit_p4.Px()/fit_p4.M())/sigmax,2 ) +
                                      pow( (fit_p4.Py()/fit_p4.M())/sigmay,2 ) +
@@ -320,12 +329,38 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         } 
 
         if( !post_vtx_selection_(cand) ) continue;
+        float best_pi_dR = 0.1;
+        float best_k_dR = 0.1;
         int best_pi_id = 0;
         int best_k_id = 0;
         int best_pi_idx = -1;
         int best_k_idx = -1;
         int best_pi_mother = -1;
         int best_k_mother = -1;
+        for(size_t igen = 0; igen < genParticles->size(); igen++) {
+          const pat::PackedGenParticle & genIt = (*genParticles)[igen];
+          if( !genIsotrk_selection_(genIt) ) continue;
+          if(abs(genIt.motherRef()->pdgId())!=5 && abs(genIt.motherRef()->pdgId())%100!=5 && abs(genIt.motherRef()->pdgId())%1000!=5) continue; // Not from b or B hadron
+          if(reco::deltaR(trk1, genIt) > best_pi_dR && reco::deltaR(trk2, genIt) > best_k_dR) continue; // no match found
+          if(reco::deltaR(trk1, genIt) < best_pi_dR) {
+            best_pi_id = genIt.pdgId();
+            best_pi_idx = igen;
+            best_pi_mother = genIt.motherRef()->pdgId();
+          }
+          if(reco::deltaR(trk1, genIt) < best_pi_dR) {
+            best_pi_dR = reco::deltaR(trk1, genIt);
+            best_pi_id = genIt.pdgId();
+            best_pi_idx = igen;
+            best_pi_mother = genIt.motherRef()->pdgId();
+          }
+          else if(reco::deltaR(trk2, genIt) < best_k_dR) {
+            best_k_dR = reco::deltaR(trk2, genIt);
+            best_k_id = genIt.pdgId();
+            best_k_idx = igen;
+            best_k_mother = genIt.motherRef()->pdgId();
+          }
+        } // igen
+        /*
         for(auto genJet = genJets->begin();  genJet != genJets->end(); ++genJet) {
           if( !jets_selection_(*genJet) ) continue;
           if(1 - jet->pt() / genJet->pt() > 0.2) continue;
@@ -337,14 +372,24 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
             if(genJet->daughter(iTrk) == nullptr) continue;
             const reco::Candidate &trkg = dynamic_cast<const reco::Candidate &>(*genJet->daughter(iTrk));
             if(abs(trkg.pdgId()) != 13 && abs(trkg.pdgId()) != 211 && abs(trkg.pdgId()) != 321) continue; // Only check mu, pi, and K
-            if(reco::deltaR(trk1, trkg) > 0.01 && reco::deltaR(trk2, trkg) > 0.01) continue; // no match found
-            if(reco::deltaR(trk1, trkg) < 0.01) {
+            if(trkg.mother(0) == nullptr) continue;
+            if(abs(trkg.mother(0)->pdgId())!=5 && abs(trkg.mother(0)->pdgId())%100!=5 && abs(trkg.mother(0)->pdgId())%1000!=5) continue; // Not from b or B hadron
+            if(reco::deltaR(trk1, trkg) > best_pi_dR && reco::deltaR(trk2, trkg) > best_k_dR) continue; // no match found
+            if(reco::deltaR(trk1, trkg) < best_pi_dR) {
               best_pi_id = trkg.pdgId();
               best_pi_idx = gTrk;
               if(trkg.mother(0) != nullptr)
                 best_pi_mother = trkg.mother(0)->pdgId();
             }
-            else if(reco::deltaR(trk2, trkg) < 0.01) {
+            if(reco::deltaR(trk1, trkg) < best_pi_dR) {
+              best_pi_dR = reco::deltaR(trk1, trkg);
+              best_pi_id = trkg.pdgId();
+              best_pi_idx = gTrk;
+              if(trkg.mother(0) != nullptr)
+                best_pi_mother = trkg.mother(0)->pdgId();
+            }
+            else if(reco::deltaR(trk2, trkg) < best_k_dR) {
+              best_k_dR = reco::deltaR(trk2, trkg);
               best_k_id = trkg.pdgId();
               best_k_idx = gTrk;
               if(trkg.mother(0) != nullptr)
@@ -352,6 +397,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
             }
           } // gTrk
         } // genJet
+        */
         cand.addUserInt("pi_gidx", best_pi_idx);
         cand.addUserInt("pi_gid", best_pi_id);
         cand.addUserInt("pi_mother", best_pi_mother);
