@@ -8,6 +8,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import chi2
 import uproot
 import mplhep as hep
+
 plt.style.use(hep.style.CMS)
 
 output = {}
@@ -51,6 +52,8 @@ with uproot.recreate('output.root') as fout:
         if 'sumw' in key:
             continue #sumw and sumw2 are dicts, not hists
         for s in output[key].axes['dataset']:
+            if '_gen' in key:
+                continue
             fout[f'histo/{key}_{s}'] = output[key][{'dataset': s}]
 
 
@@ -71,6 +74,11 @@ def jpsi_mass_fit(mass, mean, sigma, alpha, n, nsig, l, nbkg):
     Define function for fitting J/Psi mass peak
     Peak Crystal Ball + exponential bkg
     ''' 
+    # Using two Gaussians + expo for now
+    return \
+    nsig * np.exp(-1/2 * (np.square(mass - mean) / np.square(sigma))) + \
+    nsig * np.exp(-1/2 * (np.square(mass - mean) / np.square(sigma/2))) + \
+    nbkg * np.exp(l * mass)
     t = (mass - mean) / sigma
     cb = 0
     if type(mass) == list:
@@ -189,7 +197,7 @@ def plot_mass(meson='d0'):
     plt.savefig(f'{path}/vtx_mass_{meson}.png')
     plt.close()
 
-d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0 = 1.87, .01, 0, 1.78, 0.02, 0, 1.9, 0.02, 0, -2.27, 30
+d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0 = 1.87, .01, 0, 1.78, 0.02, 0, 1.9, 0.02, 0, -1, 30
 jpsi_mean0, jpsi_sigma0, jpsi_n0, jpsi_alpha0, l0 = 3.097, 0.033, 1, 1.4, -0.5
 def plot_and_fit_mass(meson='d0'):
     '''
@@ -207,6 +215,10 @@ def plot_and_fit_mass(meson='d0'):
     if 'jpsi' in meson:
         mass_bins = jpsi_mass_bins
     for ibin in range(0,xb_bins.shape[0]-1):
+        if ibin < 2 and meson == 'd0': # Little to no signal in first two D0 bins
+            xb_mass.append(0)
+            bins.append(xb_bins[ibin])
+            continue
         x = h[{'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId)}].values()[0]
         ne0 = np.sum(x)*2
         if ne0 < 21:
@@ -215,8 +227,8 @@ def plot_and_fit_mass(meson='d0'):
             print(f'Warning, not enough events found in {meson} bin {ibin}!')
             continue
         nd0 = .001 * ne0
-        npp = .1 * nd0
-        nkk = .1 * nd0
+        npp = .1 * nd0*0
+        nkk = .1 * nd0*0
         fit_args = [x, d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0]
         fit_init = [d0_mean0, d0_sigma0, nd0, kk_mean0, kk_sigma0, nkk, pp_mean0, pp_sigma0, npp, l0, ne0]
         print(x[15])
@@ -225,16 +237,20 @@ def plot_and_fit_mass(meson='d0'):
             fit_func = jpsi_mass_fit
             fit_args = [x, jpsi_mean0, jpsi_sigma0, jpsi_alpha0, jpsi_n0, np.max(x), l0, 0]#.001*ne0]
             fit_init = fit_args[1:]#[jpsi_mean0, jpsi_sigma0, jpsi_n0, jpsi_alpha0, ]
-        plt.step(mass_bins[:-1], x, label=f'{meson_tex[meson]} {np.round(xb_bins[ibin], 1)} < ' + '$x_{\mathrm{b}}$' + f' < {np.round(xb_bins[ibin+1], 1)}')
-        fit_bounds = ([1.85, 0, 0, 1.77, 0, 0, 1.88, 0, 0, -10, 0], [1.88, .02, ne0, 1.79, .02, ne0, 1.91, .02, ne0, 10, ne0])
+        plt.step(mass_bins, x, label=f'{meson_tex[meson]} {np.round(xb_bins[ibin], 1)} < ' + '$x_{\mathrm{b}}$' + f' < {np.round(xb_bins[ibin+1], 1)}')
+        #plt.step(mass_bins[:-1], x, label=f'{meson_tex[meson]} {np.round(xb_bins[ibin], 1)} < ' + '$x_{\mathrm{b}}$' + f' < {np.round(xb_bins[ibin+1], 1)}')
+        fit_bounds = ([1.85, 0, 0, 1.77, 0, 0, 1.88, 0, 0, -5, 0], [1.88, .02, ne0, 1.79, .02, ne0, 1.91, .02, ne0, 5, ne0])
         #g = [fit_func(x, *fit_init) for x in mass_bins]
         #plt.plot(mass_bins, g, label=f'Guess {ibin}')
         if 'jpsi' in meson:
             fit_bounds = ([2.8, 0.02, 0, 0, 0, -5, 0], [3.2, 0.05, 2, 5, 10*ne0, 5, ne0])
         try:
-            popt, pcov = curve_fit(fit_func, mass_bins[:-1], x, p0=fit_init, bounds=fit_bounds)
+            popt, pcov = curve_fit(fit_func, mass_bins, x, p0=fit_init, bounds=fit_bounds)
+            #popt, pcov = curve_fit(fit_func, mass_bins[:-1], x, p0=fit_init, bounds=fit_bounds)
         except:
             print(f'Fit {ibin} failed for {meson}!')
+            xb_mass.append(0)
+            bins.append(xb_bins[ibin])
             continue
         plt.plot(mass_bins, fit_func(mass_bins, *popt), label=f'Fit {ibin}')
         if 'd0' in meson:
@@ -244,8 +260,11 @@ def plot_and_fit_mass(meson='d0'):
             print(f'N J/Psi {round(popt[4])} +/- {round(np.sqrt(pcov[4][4]))}, N bkg {round(popt[6])} +/- {round(np.sqrt(pcov[6][6]))}')
             xb_mass.append(popt[4])
         bins.append(xb_bins[ibin])
-        chisq = np.sum(np.nan_to_num(np.square(x - fit_func(mass_bins, *popt)[:-1]) / x, 0, posinf=0, neginf=0))
-        #print(f'Chi^2 = {chisq} P = {chi2.cdf(chisq, 30)}')
+        chisq = np.sum(np.nan_to_num(np.square(x - fit_func(mass_bins, *popt)) / x, 0, posinf=0, neginf=0))
+        #chisq = np.sum(np.nan_to_num(np.square(x - fit_func(mass_bins, *popt)[:-1]) / x, 0, posinf=0, neginf=0))
+        print(f'Chi^2 = {chisq} P = {chi2.cdf(chisq, 30)}')
+    xb_mass.append(0)
+    bins.append(xb_bins[-1])
     plt.legend(ncol=3, bbox_to_anchor=(-0.1, 1.15), loc='upper left', borderaxespad=0.)
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/{meson_name}_mass_fit.png')
