@@ -87,6 +87,7 @@ BToD = cms.EDProducer(
     jets = cms.InputTag("slimmedJets"),
     genJets = cms.InputTag("slimmedGenJets"),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
+    genIsoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5 && (abs(pdgId)==211 || abs(pdgId)==13 || abs(pdgId)==321)'),# && (abs(motherRef->pdgId())!=5 || abs(motherRef->pdgId())%100!=5 || abs(motherRef->pdgId())%1000!=5)'),
     jetsSelection = cms.string('pt > 30 && abs(eta) < 2.5'),
     # This in principle can be different between electrons and muons
     postVtxSelection = cms.string(
@@ -112,6 +113,8 @@ BToDTable = cms.EDProducer(
         kgId = uint('k_gid'),
         pigIdx = uint('pi_gidx'),
         kgIdx = uint('k_gidx'),
+        pi_mother = uint('pi_mother'),
+        k_mother = uint('k_mother'),
         # fit and vtx info
         chi2 = ufloat('sv_chi2'),
         ndof = ufloat('sv_ndof'),
