@@ -100,9 +100,13 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   evt.getByToken(isotracksToken_, iso_tracks);
   unsigned int nTracks     = iso_tracks->size();
 
+  bool isData = evt.isRealData();
+
   // for gen paricles
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
-  evt.getByToken(genParticlesToken_,genParticles);
+  if(!isData) {
+    evt.getByToken(genParticlesToken_,genParticles);
+  }
 
   //for jets
   edm::Handle<pat::JetCollection> jets;
@@ -337,6 +341,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         int best_k_idx = -1;
         int best_pi_mother = -1;
         int best_k_mother = -1;
+        if(!isData) {
         for(size_t igen = 0; igen < genParticles->size(); igen++) {
           const pat::PackedGenParticle & genIt = (*genParticles)[igen];
           if( !genIsotrk_selection_(genIt) ) continue;
@@ -360,6 +365,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
             best_k_mother = genIt.motherRef()->pdgId();
           }
         } // igen
+        }
         /*
         for(auto genJet = genJets->begin();  genJet != genJets->end(); ++genJet) {
           if( !jets_selection_(*genJet) ) continue;
