@@ -13,7 +13,7 @@ for ipath,path in enumerate(args.path):
     paths = glob.glob(path)
     paths = [p for p in (chain.from_iterable(os.walk(path) for path in paths)) if 'log' not in p]
     d_path = paths[1][0]
-    files = [d_path + fname for fname in paths[1][2]]
+    files = [f'{d_path}/{fname}' for fname in paths[1][2]]
     fileset[args.process[ipath]] = files
 
     with open(f'{args.process[ipath]}.json', 'w') as fout:
