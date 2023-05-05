@@ -29,6 +29,8 @@
 #include <algorithm>
 #include "KinVtxFitter.h"
 
+#define IS_CHADRON_PDGID(id) ( ((abs(id)/100)%10 == 4) || (abs(id) >= 4000 && abs(id) <= 4999) )
+
 class BToDBuilder : public edm::global::EDProducer<> {
 
   // perhaps we need better structure here (begin run etc)
@@ -339,13 +341,14 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         int best_k_id = 0;
         int best_pi_idx = -1;
         int best_k_idx = -1;
-        int best_pi_mother = -1;
-        int best_k_mother = -1;
+        int best_pi_mother = 0;
+        int best_k_mother = 0;
         if(!isData) {
         for(size_t igen = 0; igen < genParticles->size(); igen++) {
           const pat::PackedGenParticle & genIt = (*genParticles)[igen];
           if( !genIsotrk_selection_(genIt) ) continue;
-          if(abs(genIt.motherRef()->pdgId())!=5 && abs(genIt.motherRef()->pdgId())%100!=5 && abs(genIt.motherRef()->pdgId())%1000!=5) continue; // Not from b or B hadron
+          //if(genIt.mother() == nullptr) continue;
+          if(abs(genIt.motherRef()->pdgId())!=5 && !IS_CHADRON_PDGID(genIt.motherRef()->pdgId())) continue; // Not from b or charm hadron
           if(reco::deltaR(trk1, genIt) > best_pi_dR && reco::deltaR(trk2, genIt) > best_k_dR) continue; // no match found
           if(reco::deltaR(trk1, genIt) < best_pi_dR) {
             best_pi_id = genIt.pdgId();
