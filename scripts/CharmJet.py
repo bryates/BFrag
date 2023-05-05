@@ -46,7 +46,6 @@ for jname in jfile:
                 if not type(v) == list:
                     v = [v]
                 fileset[k] = v
-print(fileset)
 if ifile >= 0:
     fileset = {'ttbar': [fileset['ttbar'][ifile]]}
 print(fileset)
@@ -75,8 +74,8 @@ def is_ttbar(jets, bjets, leptons):
         nLep = ak.num(leptons)
         jpt30 = jets_pt[:,0] > 30
         lpt25 = (leps_pt[:,0] > 25)
-        jeta24 = abs(jets_eta) < 2.4
-        leta24 = abs(leps_eta) < 2.4
+        jeta24 = np.abs(jets_eta) < 2.4
+        leta24 = np.abs(leps_eta) < 2.4
         #is_ttbar = (ak.num(jets)>4)&(ak.num(bjets_tight)>1)&((ak.num(ele)>1)|(ak.num(mu)>1))# & (pad_jets[:,0].pt>30)# & ((pad_ele[:,0].pt>25) | (pad_mu[:,0].pt>25))#&(ht>180)
         return (nJets >= 1) & (nBJets >=1) & (nLep >= 1) & jpt30 & lpt25# & jeta24 & leta24
 
@@ -112,7 +111,10 @@ class Processor(processor.ProcessorABC):
         mass_axes = [hist.axis.Regular(name=f'd0_{int(xb_bin*10)}', label='D0 mass [GeV] (' + str(round(self.xb_bins[ibin], 2)) + ' < $x_{\mathrm{b}}$ < ' + str(round(self.xb_bins[ibin+1], 2)) + ')', bins=len(self.d0_mass_bins), start=self.d0_mass_bins[0], stop=self.d0_mass_bins[-1]) for ibin,xb_bin in enumerate(self.xb_bins[:-1])]
         meson_axis = hist.axis.IntCategory(name="meson_id", label="Meson pdgId (411 D0, 41113 D0mu, 443 J/Psi, 443211 J/Psi+K)", categories=[411, 41113, 443])
         jet_axis = hist.axis.IntCategory(name="jet_id", label="Jet flavor", categories=list(range(1,7)))
-        gen_axis = hist.axis.IntCategory(name="g_id", label="Gen-matched flavor", categories=[], growth=True)
+        pi_gen_axis = hist.axis.IntCategory(name="pi_gid", label="Gen-matched flavor", categories=[], growth=True)
+        k_gen_axis = hist.axis.IntCategory(name="k_gid", label="Gen-matched flavor", categories=[], growth=True)
+        pi_mother_gen_axis = hist.axis.IntCategory(name="pi_mother", label="Gen-matched flavor", categories=[], growth=True)
+        k_mother_gen_axis = hist.axis.IntCategory(name="k_mother", label="Gen-matched flavor", categories=[], growth=True)
         ctau_axis = hist.axis.Regular(name='ctau', label='Meson time of flight', bins=100, start=0, stop=100)
         self.output = processor.dict_accumulator({
             'j0pt': hist.Hist(dataset_axis, jpt_axis),
@@ -124,7 +126,7 @@ class Processor(processor.ProcessorABC):
             'jet_id'  : hist.Hist(dataset_axis, meson_axis, jet_axis),
             'xb_mass_jpsi'  : hist.Hist(dataset_axis, meson_axis, xb_axis, jpsi_mass_axis),
             'xb_mass_d0'  : hist.Hist(dataset_axis, meson_axis, xb_axis, d0_mass_axis),
-            'xb_mass_d0_gen'  : hist.Hist(dataset_axis, meson_axis, gen_axis, xb_axis, d0_mass_axis),
+            'xb_mass_d0_gen'  : hist.Hist(dataset_axis, meson_axis, pi_gen_axis, k_gen_axis, pi_mother_gen_axis, k_mother_gen_axis, xb_axis, d0_mass_axis),
             'xb_jpsi'  : hist.Hist(dataset_axis, xb_jpsi_axis),
             'xb_d0'  : hist.Hist(dataset_axis, xb_axis),
             'xb_d0mu'  : hist.Hist(dataset_axis, xb_axis),
@@ -202,20 +204,18 @@ class Processor(processor.ProcessorABC):
         selections.add('d0', ak.firsts(d0_mask, axis=1))
         #selections.add('d0', ak.firsts(d0_mask, axis=1) & (ht>180))
         selections.add('ctau', ak.firsts(ctau_mask, axis=1))
+        #mass = ak.firsts(charm_cand.mass)
         mass = ak.firsts(charm_cand.fit_mass)
 
-        print(g_kid, '\n\n\n\n')
-        #g_pid_mask = ak.fill_none(g_pid == pid, False)
-        #g_kid_mask = ak.fill_none(g_kid == kid, False)
-        #pid[g_pid_mask] = g_pid
-        #kid[g_kid_mask] = g_kid
-        #pid[~g_pid_mask] = 0
-        #kid[~g_kid_mask] = 0
-        d0_gid = g_pid*1000 + g_kid
-        weight  = events.Generator.weight
+        pi_gid = ak.firsts(ak.fill_none(charm_cand.pigId, 0))
+        k_gid = ak.firsts(ak.fill_none(charm_cand.kgId, 0))
+        pi_mother = ak.firsts(ak.fill_none(charm_cand.pi_mother, 0))
+        k_mother = ak.firsts(ak.fill_none(charm_cand.k_mother, 0))
+        #d0_gid = np.abs(pi_gid)*1e6 + np.abs(k_gid)*1e3 + np.abs(
+        weight = events.Generator.weight
 
         # D0 mu tagged
-        d0_mu_mask = abs(charm_cand.x_id)==13
+        d0_mu_mask = np.abs(charm_cand.x_id)==13
         #selections.add('d0mu', ak.any(d0_mask, axis=1))
         charm_cand[d0_mu_mask]['meson_id'] = 41113
         d0_mu = charm_cand[d0_mu_mask]
@@ -223,6 +223,7 @@ class Processor(processor.ProcessorABC):
         #xb_d0mu = ak.flatten((d0_mu.pt + d0_mu.x_pt)[events.is_ttbar] / jets.pt[d0_mu.jetIdx][events.is_ttbar])
 
         # Define xb
+        #xb = (charm_cand.pt / jets[charm_cand.jetIdx].pt)
         xb = (charm_cand.fit_pt / jets[charm_cand.jetIdx].pt)
         xb_mu = (charm_cand.x_pt / jets[charm_cand.jetIdx].pt)
         #xb[d0_mu_mask] += xb_mu
@@ -253,7 +254,7 @@ class Processor(processor.ProcessorABC):
         self.output['xb_d0'].fill(dataset=dataset, xb=xb[d0_sel], weight=weight[d0_sel])
         self.output['xb_mass_jpsi'].fill(dataset=dataset, meson_id=meson_id[jpsi_sel], xb=xb[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
         self.output['xb_mass_d0'].fill(dataset=dataset, meson_id=meson_id[d0_sel], xb=xb[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
-        self.output['xb_mass_d0_gen'].fill(dataset=dataset, meson_id=meson_id[d0_sel], g_id=d0_gid[d0_sel], xb=xb[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
+        self.output['xb_mass_d0_gen'].fill(dataset=dataset, meson_id=meson_id[d0_sel], pi_gid=pi_gid[d0_sel], k_gid=k_gid[d0_sel], pi_mother=pi_mother[d0_sel], k_mother=k_mother[d0_sel], xb=xb[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
         self.output['vtx_mass_d0'].fill(dataset=dataset, vtx=vtx[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
         self.output['chi_mass_d0'].fill(dataset=dataset, chi=chi[d0_sel], d0_mass=mass[d0_sel], weight=weight[d0_sel])
         self.output['vtx_mass_jpsi'].fill(dataset=dataset, vtx=vtx[jpsi_sel], jpsi_mass=mass[jpsi_sel], weight=weight[jpsi_sel])
