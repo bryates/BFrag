@@ -130,15 +130,18 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   size_t ijet = 0;
+  float j_pt_ch[jets->size()];
   //bool extraFound = false;
   for(auto jet = jets->begin();  jet != jets->end(); ++jet) {
     if( !jets_selection_(*jet) ) continue;
     size_t ndau = jet->numberOfDaughters();
     //ndau = ndau > 4 ? 4 : ndau; // Fit sometimes crashes at large candidates, low pT not modeled well anyway
 
+    j_pt_ch[ijet] = 0;
     for(size_t iTrk=0; iTrk < ndau; ++iTrk) {
 
       const pat::PackedCandidate &trk1 = dynamic_cast<const pat::PackedCandidate &>(*jet->daughter(iTrk));
+      j_pt_ch[ijet] += abs(trk1.charge() * trk1.pt()); // neutral tracks contribute 0 to charged pT
       //const pat::PackedCandidate & trk1 = (*iso_tracks)[iTrk];
       //if(abs(trk1.pdgId()) != 211) continue; // Charged hadrons
       if(abs(trk1.pdgId()) != 211 && abs(trk1.pdgId()) != 13) continue; // Charged hadrons or muons
@@ -422,6 +425,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   } // jet
 
   for (auto & cand: *ret_val){
+    cand.addUserFloat("j_pt_ch", j_pt_ch[cand.userInt("jid")]);
     cand.addUserInt("n_pi_used", std::count(used_pi_id.begin(),used_pi_id.end(),cand.userInt("pi_idx"))+std::count(used_k_id.begin(),used_k_id.end(),cand.userInt("pi_idx")));
     cand.addUserInt("n_k_used", std::count(used_pi_id.begin(),used_pi_id.end(),cand.userInt("k_idx"))+std::count(used_k_id.begin(),used_k_id.end(),cand.userInt("k_idx")));
     //cand.addUserInt("n_x_used", std::count(used_pi_id.begin(),used_pi_id.end(),cand.userInt("x_idx"))+std::count(used_x_id.begin(),used_x_id.end(),cand.userInt("x_idx")));

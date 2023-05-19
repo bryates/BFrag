@@ -106,6 +106,7 @@ BToDTable = cms.EDProducer(
     variables=cms.PSet(
         # pre-fit quantities
         CandVars,
+        j_pt_ch = ufloat('j_pt_ch'),
         jetIdx = uint('jid'),
         piIdx = uint('pi_idx'),
         kIdx = uint('k_idx'),
