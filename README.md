@@ -68,3 +68,15 @@ scram b -j8
 sh scripts/run_combine.sh
 ```
 will make the datacard, the workspace, and run combine with the MultiDimFit option
+
+### Running in singularity for local jobs
+```
+singularity shell -B ${PWD}:/work /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask-cc7:latest
+singularity shell -B ${PWD}:/work -B /eos -B /cvmfs -B /etc /cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/batch-team/dask-lxplus/lxdask-cc7\:latest
+```
+
+### Making json files from /eos paths
+```python
+python3 scripts/build_path.py --path <path1,path2,...> --process <proc1,proc2,...>
+python3 scripts/build_path.py --path /eos/cms/store/group/phys_top/byates/PFNano/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1_PFtestNano/230505_175133 --process ttbar
+```

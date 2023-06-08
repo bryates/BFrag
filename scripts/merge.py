@@ -32,6 +32,7 @@ for ifile in range(total):
     sumw += fin['sumw']['ttbar']
     sumw2 += fin['sumw2']['ttbar']
     count += 1
+    del fin
 print(f'Loaded {count} / {total}')
 print(output['sumw'])
 
@@ -168,6 +169,40 @@ def plot_mass(meson='d0'):
     hep.cms.label(lumi=lumi)
     plt.savefig(f'{path}/{meson_name}_mass_full.png')
     plt.close()
+
+    if meson == 'd0':
+        bins = []
+        #output['xb_mass_d0_gen'][{'dataset': sum, 'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId), 'g_id': sum}].plot1d(label='RECO $D^{0}$')
+        #for ibin in range(0,xb_bins.shape[0]-1):
+        #    unmatch = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId), 'g_id': 0.j}]
+        #    for gbin in output['xb_mass_d0_gen'].axes[2].edges:
+        #        id_bin = output['xb_mass_d0_gen'].axes[2].value(int(gbin))
+        #        if id_bin != 32112 and id_bin != 211321 and id_bin != 0 and id_bin != None:
+        #            unmatch += output['xb_mass_d0_gen'][{'dataset': sum, 'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId), 'g_id': hist.loc(id_bin)}]
+        #    h = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId), 'g_id': 211321.j}]
+        #    h.plot1d(stack=True, label='$D^{0} \\to \pi K$')
+        #    h = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId), 'g_id': 321211.j}]
+        #    h.plot1d(stack=True, label='$D^{0} \\to K \pi$')
+        #    h = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': slice(hist.loc(xb_bins[ibin]), hist.loc(xb_bins[ibin+1]), sum), 'meson_id': hist.loc(pdgId), 'g_id': 211211.j}]
+        #    h.plot1d(stack=True, label='$D^{0} \\to \pi \pi$')
+        #    unmatch.plot1d(stack=True, label='unmatched')
+        #fig, ax = plt.subplots(1, 1, figsize=(7,7))
+        piK = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': sum, 'meson_id': hist.loc(pdgId), 'pi_gid': 211.j, 'k_gid': 321.j, 'pi_mother': sum, 'k_mother': sum}]
+        Kpi = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': sum, 'meson_id': hist.loc(pdgId), 'pi_gid': 321.j, 'k_gid': 211.j, 'pi_mother': sum, 'k_mother': sum}]
+        pipi = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': sum, 'meson_id': hist.loc(pdgId), 'pi_gid': 211.j, 'k_gid': 211.j, 'pi_mother': sum, 'k_mother': sum}]
+        #unmatch = output['xb_mass_d0_gen'][{'dataset': sum, 'xb': sum, 'meson_id': hist.loc(pdgId), 'g_id': 0.j}]
+        #output['xb_mass_d0_gen'][{'dataset': sum, 'xb': sum, 'meson_id': hist.loc(pdgId), 'g_id': sum}].plot1d(label='Total $D^{0}$')
+        #for gbin in output['xb_mass_d0_gen'].axes[2].edges:
+        #    id_bin = output['xb_mass_d0_gen'].axes[2].value(int(gbin))
+        #    if id_bin != 32112 and id_bin != 211321 and id_bin != 0 and id_bin != None:
+        #        unmatch += output['xb_mass_d0_gen'][{'dataset': sum, 'xb': sum, 'meson_id': hist.loc(pdgId), 'g_id': hist.loc(id_bin)}]
+        #unmatch.plot1d(stack=True, label='unmatched')
+        hep.histplot([pipi,piK,Kpi], stack=True, label=['$D^{0} \\to \pi \pi$', '$D^{0} \\to \pi K$', '$D^{0} \\to K \pi$'])
+        #hep.histplot([unmatch,pipi,piK,Kpi], stack=True, label=['unmatched', '$D^{0} \\to \pi K$', '$D^{0} \\to K \pi$', '$D^{0} \\to \pi \pi$'])
+        plt.legend()
+        hep.cms.label(lumi=lumi)
+        plt.savefig(f'{path}/xb_{meson_name}_gen-match.png')
+        plt.close()
     
     
     output[f'xb_{meson}'].plot1d(label='$x_{\mathrm{b}}$')
