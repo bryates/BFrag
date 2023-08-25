@@ -77,6 +77,6 @@ singularity shell -B ${PWD}:/work -B /eos -B /cvmfs -B /etc /cvmfs/unpacked.cern
 
 ### Making json files from /eos paths
 ```python
-python3 scripts/build_path.py --path <path1,path2,...> --process <proc1,proc2,...>
-python3 scripts/build_path.py --path /eos/cms/store/group/phys_top/byates/PFNano/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16MiniAODv2-106X_mcRun2_asymptotic_v17-v1_PFtestNano/230505_175133 --process ttbar
+python3 scripts/build_path.py --path <path1> --json <json path> --out <output name>
+python3 scripts/build_path.py --path /eos/cms/store/group/phys_top/byates/PFNano/ --json card_mc16.yml --out mc_UL16.json
 ```
