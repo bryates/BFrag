@@ -14,10 +14,14 @@ infiles = json.load(fin)
 
 fileset = {}
 for ifilename,filename in enumerate(infiles):
-    fileset[infiles[filename] + '_16'] = []
-    fileset[infiles[filename] + '_16APV'] = []
-    fileset[infiles[filename] + '_17'] = []
-    fileset[infiles[filename] + '_18'] = []
+    if any(data in filename for data in ['EG','Muon', 'Electron']):
+        for f in infiles[filename]:
+            fileset[f] = []
+    else:
+        fileset[infiles[filename] + '_16'] = []
+        fileset[infiles[filename] + '_16APV'] = []
+        fileset[infiles[filename] + '_17'] = []
+        fileset[infiles[filename] + '_18'] = []
     for path in glob.iglob(f'{args.path}/{filename}/**/*.root', recursive=True):
         path = path.replace('//', '/')
         #paths = [p for p in (chain.from_iterable(os.walk(path) for path in paths)) if 'log' not in p]
@@ -27,7 +31,11 @@ for ifilename,filename in enumerate(infiles):
         year = path.split('UL')[1][:2]
         if 'APV' in path:
             year = year + 'APV'
-        fileset[infiles[filename]+'_'+year].append(path)
+        if "data" in path:
+            for f in infiles[filename]:
+                fileset[f].append(path)
+        else:
+            fileset[infiles[filename]+'_'+year].append(path)
 
 with open(f'{args.out}', 'w') as fout:
     json.dump(fileset, fout, indent=4)
