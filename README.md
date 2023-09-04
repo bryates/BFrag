@@ -13,6 +13,11 @@ To submit a list of samples, described in a json file to the grid you can use th
 ```
 python scripts/submitToGrid.py -j data/UL/samples.json -c ${CMSSW_BASE}/src/BFrag/BFrag/test/runJetAnalyzer_cfg.py --lfn /store/group/phys_top/byates -s
 ```
+Calculating luminosity
+```
+mergeJSON.py dataUL16_yml/crab_SingleMuon_Run2016*/results/processedLumis.json  --output SingleMuon_2016.json
+brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/Normtags/normtag_DATACERT.json -u /fb -i SingleMuon_2016.json --hltpath="HLT_Iso*24_v*"
+```
 ### Running a local test
 Initialize voms proxy (if needed):
 ```
