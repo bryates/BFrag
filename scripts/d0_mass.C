@@ -49,7 +49,7 @@ void d0_mass() {
     w->factory("Exponential::bkg(d0,lambda[-2.7,-10,10])");
     // Extra Gaussian bkg
     w->factory("Gaussian::gbkg(d0, mean_bkg_low[1.7, 1.7, 1.75], sigma_bkg_low[.4, 0, .5])");
-    w->factory("Gaussian::bkg_pol(d0, mean_bkg[1.864, 1.8, 1.9], sigma_bkg[0.5, .1, 5])");
+    w->factory("Gaussian::bkg_pol(d0, mean_bkg[1.864, 1.7, 1.9], sigma_bkg[0.5, .1, 5])");
     //w->factory("Polynomial::bkg_pol(d0[1.7,2.0], {a0[-5,-10,1], a1[0]})");
     w->pdf("bkg_pol")->Print("v");
     w->factory("SUM::cabibbo(nkk[0,0,10000]*kk, npp[0, 0, 10000]*pp)");
@@ -62,7 +62,7 @@ void d0_mass() {
     //w->factory("SUM::model2(nsig[800,0,100000]*model, nbkg[1800,0,1000000]*bkg_pol)");
     //w->factory("SUM::model2(nsig[800,0,100000]*model, nbkg[1800,0,1000000]*bkg_pol)");
     //w->factory("SUM::model2(nmod[8000,0,1000000000]*model, ngbkg[180,0,1000]*gbkg)");
-    w->factory("SUM::model3(nsig1[800,0,1000000000]*sig,nsig2[800,0,1000000000]*sig2,nc[0, 0, 100000]*cabibbo,nbkg[1800,0,1000000]*bkg,ngbkg[0,0,1000]*gbkg,nbkgp[8000,0,1000000000]*bkg_pol)");
+    w->factory("SUM::model3(nsig1[8000,0,1000000000]*sig,nsig2[8000,0,1000000000]*sig2,nc[0, 0, 100000]*cabibbo,nbkg[1800,0,1000000]*bkg,ngbkg[0,0,1000]*gbkg,nbkgp[8000,0,1000000000]*bkg_pol)");
     //w->factory("SUM::model3(nsig1[8000,0,1000000000]*sig,nsig2[8000,0,1000000000]*sig2,nc[0, 0, 100000]*cabibbo,nbkg[1800,0,1000000]*bkg,ngbkg[0,0,1000]*gbkg)");
     auto d0 = w->var("d0");
     d0->SetTitle("D^{0} mass [GeV]");
@@ -101,13 +101,13 @@ void d0_mass() {
     pt->SetBorderSize(0);
     pt->SetTextFont(42);
     pt->SetTextSize(0.046);
-    TString text = TString::Format("N_{D^{0}}= %.0f +/- %.0f (stat)", w->var("nsig1")->getVal(), sqrt(w->var("nsig1")->getVal()));
+    float sig = w->var("nsig1")->getVal() + w->var("nsig2")->getVal();
+    TString text = TString::Format("N_{D^{0}}= %.0f +/- %.0f (stat)", sig, sqrt(sig));
     pt->AddText(text);
     pt->Draw();
     c1->SaveAs(TString::Format("/eos/home-b/byates/www/BFrag/xb_mass/d0_mass_%d.png", ibin));
     c1->SaveAs(TString::Format("/eos/home-b/byates/www/BFrag/xb_mass/d0_mass_%d.pdf", ibin));
 
-    float sig = w->var("nsig1")->getVal() + w->var("nsig2")->getVal();
     std::cout << "Total nd0=" << w->var("nsig1")->getVal() << std::endl;
     float bkg = w->var("nbkg")->getVal() + w->var("nbkgp")->getVal() + w->var("nc")->getVal();
     h_xb->SetBinContent(ibin+1, sig);
