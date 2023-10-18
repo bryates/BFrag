@@ -6,19 +6,35 @@
 #include <RooDataHist.h>
 
 void d0mu_mass() {
-  auto fin = TFile::Open("output.root");
+  auto fin = TFile::Open("output_d0mu.root");
+  std::vector<TString> keys;
+  auto dir = (TDirectoryFile*)fin->Get("histo");
+  TIter next(dir->GetListOfKeys());
+  TKey *key;
+  while((key = (TKey*)next())) {
+    if(TString(key->GetName()).Contains("xb_mass_d0_") && !TString(key->GetName()).Contains("TTTo")) keys.push_back(TString(key->GetName()));
+  }
 
   auto c1 = new TCanvas("c1", "c1", 800, 800);
   c1->cd();
 
   std::vector<float> d0mu_xb_bins = {0., 0.2, 0.4, 0.6, 0.8, 1.};
   //std::vector<float> d0mu_xb_bins = {0, .2, .4, .5, .6, .7, .8, .9, 1.};
-  auto h_xb = new TH1F("xb", "xb;D^{0} #it{p}_{T} / jet #it{p}_{T}", d0mu_xb_bins.size()-1, d0mu_xb_bins.data());
-  //auto h_xb = new TH1F("xb", "xb;D^{0} #it{p}_{T} / #Sigma #it{p}_{T}^{ch}", 10, 0, 1);
+  //auto h_xb = new TH1F("xb", "xb;D^{0} #it{p}_{T} / jet #it{p}_{T}", d0mu_xb_bins.size()-1, d0mu_xb_bins.data());
+  auto h_xb = new TH1F("xb", "xb;D^{0} #it{p}_{T} / #Sigma #it{p}_{T}^{ch}", 10, 0, 1);
 
   float width = 0;
-  for(int ibin = 0; ibin < d0mu_xb_bins.size()-1; ibin++) {
-    auto h_mass = (TH1F*)fin->Get(TString::Format("histo/xb_mass_d0mu_%d_ttbar", ibin));
+  //for(int ibin = 0; ibin < d0mu_xb_bins.size()-1; ibin++) 
+  for(int ibin = 0; ibin < 10; ibin++) {
+    std::cout << "bin" << ibin << "=" << d0mu_xb_bins[ibin] << std::endl;
+    auto h_mass = (TH1F*)fin->Get(TString::Format("histo/xb_mass_d0mu_%d_TTToSemiLeptonic_16", ibin));
+    h_mass->Add((TH1F*)((TH1F*)fin->Get(TString::Format("histo/xb_mass_d0mu_%d_TTToSemiLeptonic_16APV", ibin)))->Clone());
+    for(auto &key : keys) {
+      std::cout << key << std::endl;
+      if(key.Contains(TString::Format("_%d_", ibin)))
+        h_mass->Add((TH1F*)fin->Get(TString::Format("histo/%s", key.Data())));
+      //h_mass->Add((TH1F*)fin->Get(TString::Format("histo/xb_mass_d0mu_%d_%s", ibin, key.Data())));
+    }
     h_mass->Rebin(2);
     auto w = new RooWorkspace("w");
     // D0 -> pi K signal Gaussian
@@ -33,7 +49,8 @@ void d0mu_mass() {
     w->factory("Exponential::bkg(d0,lambda[-2.7,-10,10])");
     // Extra Gaussian bkg
     //w->factory("Gaussian::gbkg(d0, mean_bkg[1.864, 1.7, 2.0], sigma_bkg[.02, 0, 0.5])");
-    w->factory("Polynomial::bkg_pol(d0[1.7,2.0], {a0[0,-10,1], a1[0]})");
+    w->factory("Gaussian::bkg_pol(d0, mean_bkg[1.868, 1.7, 2.0], sigma_bkg[.2, 0.1, 0.5])");
+    //w->factory("Polynomial::bkg_pol(d0, {a0[-1,-10,0], a1[0]})");
     //w->pdf("bkg_pol")->Print("v");
     w->factory("SUM::cabibbo(nkk[0,0,10000]*kk, npp[0, 0, 10000]*pp)");
     //w->factory("SUM::cabibbo(nkk[400,0,10000]*kk, npp[400, 0, 10000]*pp)");
@@ -45,7 +62,8 @@ void d0mu_mass() {
     //w->factory("SUM::model2(nsig[800,0,100000]*model, nbkg[1800,0,1000000]*bkg_pol)");
     //w->factory("SUM::model2(nmod[8000,0,1000000000]*model, ngbkg[1800,0,1000000]*gbkg)");
     //w->factory("SUM::model3(nsig[800,0,100000]*sig,nkk[0,0,10000]*kk, npp[0,0,10000]*pp, nbkg[1800, 0, 1000000]*bkg)");
-    w->factory("SUM::model3(nsig[8000,0,1000000000]*sig,nc[0, 0, 100000]*cabibbo,nbkg[1800,0,1000000]*bkg)");
+    w->factory("SUM::model3(nsig[8000,0,1000000000]*sig,nbkg[1800,0,1000000]*bkg,nbkgp[8000,0,10000000]*bkg_pol)");
+    //w->factory("SUM::model3(nsig[8000,0,1000000000]*sig,nc[0, 0, 100000]*cabibbo,nbkg[1800,0,1000000]*bkg,nbkgp[800,0,10000000]*bkg_pol)");
     auto d0 = w->var("d0");
     d0->SetTitle("D^{0} mass [GeV]");
     auto d = new RooDataHist("d0_mass", "d0_mass", *d0, RooFit::Import(*(TH1F*)h_mass->Clone()));
@@ -61,10 +79,10 @@ void d0mu_mass() {
     model->plotOn(frame);
     //model->plotOn(frame, RooFit::Components("kk", "pp", "bkg", "bkg_po"), RooFit::LineStyle(kDashed))->Draw();
     model->plotOn(frame, RooFit::Components("sig"), RooFit::LineColor(kRed));
-    model->plotOn(frame, RooFit::Components("kk"), RooFit::LineStyle(kDashed));
-    model->plotOn(frame, RooFit::Components("pp"), RooFit::LineStyle(kDashed));
+    //model->plotOn(frame, RooFit::Components("kk"), RooFit::LineStyle(kDashed));
+    //model->plotOn(frame, RooFit::Components("pp"), RooFit::LineStyle(kDashed));
     model->plotOn(frame, RooFit::Components("bkg"), RooFit::LineStyle(kDashed));
-    //model->plotOn(frame, RooFit::Components("bkg_pol"), RooFit::LineStyle(kDashed));
+    model->plotOn(frame, RooFit::Components("bkg_pol"), RooFit::LineStyle(kDashed));
     frame->Draw();
 
     float chi2 = frame->chiSquare();//"model", "data", 3);
@@ -73,6 +91,15 @@ void d0mu_mass() {
               << "\tnd0=" << w->var("nsig")->getVal() / h_mass->Integral()
               << "\tnbkg=" << w->var("nbkg")->getVal() / h_mass->Integral() << std::endl;
 
+    TPaveText *pt = new TPaveText(0.12,0.85,0.3,0.65,"NDC"); //NB blNDC
+    pt->SetFillStyle(0);
+    pt->SetTextAlign(11);
+    pt->SetBorderSize(0);
+    pt->SetTextFont(42);
+    pt->SetTextSize(0.046);
+    TString text = TString::Format("N_{D^{0}}= %.4f +/- %.4f (stat)", w->var("nsig")->getVal(), sqrt(w->var("nsig")->getVal()));
+    pt->AddText(text);
+    pt->Draw();
     c1->SaveAs(TString::Format("/eos/home-b/byates/www/BFrag/xb_mass/d0mu_mass_%d.png", ibin));
     c1->SaveAs(TString::Format("/eos/home-b/byates/www/BFrag/xb_mass/d0mu_mass_%d.pdf", ibin));
 
