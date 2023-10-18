@@ -75,7 +75,7 @@ void jpsi_mass() {
     pt->SetBorderSize(0);
     pt->SetTextFont(42);
     pt->SetTextSize(0.046);
-    TString text = TString::Format("N_{J/#psi}= %.4f +/- %.4f (stat)", w->var("nsig")->getVal(), sqrt(w->var("nsig")->getVal()));
+    TString text = TString::Format("N_{J/#psi}= %.0f +/- %.0f (stat)", w->var("nsig")->getVal(), sqrt(w->var("nsig")->getVal()));
     pt->AddText(text);
     pt->Draw();
     c1->SaveAs(TString::Format("/eos/home-b/byates/www/BFrag/xb_mass/jpsi_mass_%d.png", ibin));
