@@ -158,7 +158,7 @@ void BToDBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
         const float mass1 = abs(trk1.pdgId()) == 13 ? MUON_MASS : PI_MASS;
         const float mass2 = abs(trk2.pdgId()) == 13 ? MUON_MASS : K_MASS;
         const float sigma1 = abs(trk1.pdgId()) == 13 ? LEP_SIGMA : K_SIGMA; // K and pi have same sigma in helper.h
-        const int meson_id = abs(trk1.pdgId()) == 13 ? 443 : 411;
+        const int meson_id = abs(trk1.pdgId()) == 13 ? 443 : 421;
 
         math::PtEtaPhiMLorentzVector k_p4( // k mass hypothesis for jTrk
           trk2.pt(), 
