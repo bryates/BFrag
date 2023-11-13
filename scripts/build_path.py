@@ -14,28 +14,25 @@ infiles = json.load(fin)
 
 fileset = {}
 for ifilename,filename in enumerate(infiles):
-    if any(data in filename for data in ['EG','Muon', 'Electron']):
-        for f in infiles[filename]:
-            fileset[f] = []
+    isData = False
+    fname = infiles[filename]
+    if any(data in infiles[filename] for data in ['EG','Muon', 'Electron']):
+        isData = True
+        fileset['Data13TeV_'+infiles[filename]+'_'+filename.split('UL')[1].split('_')[0][2:]] = []
     else:
         fileset[infiles[filename] + '_16'] = []
         fileset[infiles[filename] + '_16APV'] = []
         fileset[infiles[filename] + '_17'] = []
         fileset[infiles[filename] + '_18'] = []
-    for path in glob.iglob(f'{args.path}/{filename}/**/*.root', recursive=True):
+    for path in glob.iglob(f'{args.path}/{fname}/**/*.root', recursive=True):
         path = path.replace('//', '/')
-        #paths = [p for p in (chain.from_iterable(os.walk(path) for path in paths)) if 'log' not in p]
-        #d_path = paths[1][0]
-        #files = [f'{d_path}/{fname}' for fname in paths[1][2]]
-        #files = [f'{d_path}/{fname}' for fname in paths[1][2]]
-        year = path.split('UL')[1][:2]
+        year = path.split('UL')[1][:2] if not isData else path.split('UL')[1].split('_')[0][2:]
         if 'APV' in path:
             year = year + 'APV'
-        if "data" in path:
-            for f in infiles[filename]:
-                fileset[f].append(path)
-        else:
+        if not isData:
             fileset[infiles[filename]+'_'+year].append(path)
+        else:
+            fileset['Data13TeV_'+infiles[filename]+'_'+year].append(path)
 
 with open(f'{args.out}', 'w') as fout:
     json.dump(fileset, fout, indent=4)
